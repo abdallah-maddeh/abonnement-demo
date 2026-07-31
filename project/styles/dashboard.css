@@ -1,0 +1,153 @@
+.dashboard-page {
+    padding: 24px;
+    width: 100%;
+}
+
+.dashboard-header {
+    margin-bottom: 16px;
+}
+
+.dashboard-header h1 {
+    font-size: 28px;
+    font-weight: 700;
+    color: #1f2937;
+    margin: 0 0 8px;
+}
+
+.dashboard-header p {
+    color: #6b7280;
+    font-size: 15px;
+    line-height: 1.6;
+    max-width: 900px;
+    margin: 0;
+}
+
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 20px;
+    margin-top: 24px;
+}
+
+.dashboard-grid-2 {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.dashboard-card {
+    background: #ffffff;
+    border-radius: 20px;
+    padding: 24px;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+}
+
+.dashboard-card h2 {
+    font-size: 32px;
+    margin: 0 0 12px;
+    color: #111827;
+}
+
+.dashboard-card p,
+.dashboard-card small,
+.dashboard-card strong {
+    margin: 0;
+    color: #475569;
+}
+
+.dashboard-section {
+    margin-top: 32px;
+}
+
+.dashboard-section h3 {
+    font-size: 20px;
+    margin: 0 0 14px;
+    font-weight: 700;
+    color: #111827;
+}
+
+.powerbi-container {
+    width: 100%;
+    height: calc(100vh - 170px);
+    min-height: 760px;
+    background: #ffffff;
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+
+.powerbi-container iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    display: block;
+}
+
+.unauthorized-page {
+    min-height: calc(100vh - 124px);
+    display: grid;
+    place-items: center;
+    padding: 24px;
+}
+
+.unauthorized-card {
+    width: min(100%, 520px);
+    background: #ffffff;
+    border: 1px solid #f1f5f9;
+    border-radius: 16px;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+    padding: 34px;
+    text-align: center;
+}
+
+.unauthorized-icon {
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 18px;
+    border-radius: 18px;
+    display: grid;
+    place-items: center;
+    color: #f97316;
+    background: #fff7ed;
+    border: 1px solid #fed7aa;
+}
+
+.unauthorized-card h1 {
+    color: #1f2937;
+    font-size: 24px;
+    margin: 0 0 10px;
+}
+
+.unauthorized-card p {
+    color: #6b7280;
+    font-size: 15px;
+    line-height: 1.6;
+    margin: 0 0 24px;
+}
+
+.unauthorized-card button {
+    border: none;
+    border-radius: 10px;
+    background: #f97316;
+    color: #ffffff;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 700;
+    padding: 12px 20px;
+}
+
+.unauthorized-card button:hover {
+    background: #ea580c;
+}
+
+@media (max-width: 768px) {
+    .dashboard-page {
+        padding: 8px;
+    }
+
+    .powerbi-container {
+        height: 620px;
+        border-radius: 14px;
+    }
+}

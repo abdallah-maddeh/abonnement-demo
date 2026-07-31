@@ -1,0 +1,18 @@
+.history-grid,
+.card-grid,
+.table-wrapper {
+    margin-top: 0;
+}
+
+.stat-card {
+    min-height: 140px;
+}
+
+.auth-actions,
+.login-footer {
+    margin-top: 20px;
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+}

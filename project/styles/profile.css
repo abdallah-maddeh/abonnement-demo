@@ -1,0 +1,50 @@
+/* filepath: project/styles/profile.css
+ * Styles pour la page profil
+ */
+
+.profile-page {
+    min-height: calc(100vh - 80px);
+    padding: 40px 20px;
+    background-color: var(--light-gray);
+}
+
+.profile-container {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.profile-container h1 {
+    font-size: 28px;
+    color: var(--primary-blue);
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+.profile-form {
+    background-color: var(--white);
+    padding: 30px;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+}
+
+.form-actions {
+    display: flex;
+    gap: 15px;
+    margin-top: 30px;
+}
+
+.form-actions .btn-primary,
+.form-actions .btn-secondary {
+    flex: 1;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+    .form-actions {
+        flex-direction: column;
+    }
+    
+    .profile-form {
+        padding: 20px;
+    }
+}

@@ -1,0 +1,72 @@
+/* filepath: project/styles/login.css
+ * Styles pour la page de connexion
+ */
+
+.login-page {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, var(--primary-blue) 0%, var(--secondary-blue) 100%);
+    padding: 20px;
+}
+
+.login-container {
+    background-color: var(--white);
+    padding: 40px;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-lg);
+    width: 100%;
+    max-width: 400px;
+}
+
+.login-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.login-header h1 {
+    font-size: 36px;
+    color: var(--primary-blue);
+    margin-bottom: 8px;
+}
+
+.login-header p {
+    color: var(--gray);
+    font-size: 16px;
+}
+
+.login-form {
+    margin-bottom: 20px;
+}
+
+.login-form .btn-primary {
+    margin-top: 10px;
+}
+
+.login-info {
+    background-color: var(--light-gray);
+    padding: 15px;
+    border-radius: var(--radius);
+    font-size: 13px;
+    color: var(--gray);
+}
+
+.login-info p {
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.login-info ul {
+    list-style: none;
+    padding-left: 0;
+}
+
+.login-info li {
+    padding: 4px 0;
+}
+
+.login-info li::before {
+    content: "• ";
+    color: var(--accent-orange);
+}

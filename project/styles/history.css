@@ -1,0 +1,43 @@
+.history-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 18px;
+}
+
+.history-card {
+    background: var(--bg-surface);
+    border-radius: var(--radius-card);
+    padding: 22px;
+    box-shadow: var(--shadow-soft);
+    border: 1px solid rgba(226, 232, 240, 0.9);
+}
+
+.history-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 18px;
+}
+
+.history-card h3 {
+    margin: 8px 0 0;
+    color: var(--text-color);
+}
+
+.history-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--muted-color);
+    margin-bottom: 12px;
+}
+
+.history-label {
+    color: var(--text-color);
+    margin-right: 8px;
+}
+
+.history-icon {
+    color: var(--primary-blue);
+}

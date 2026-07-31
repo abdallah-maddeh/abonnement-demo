@@ -1,0 +1,16 @@
+.table-actions button.small {
+    min-width: 110px;
+}
+
+.auth-form .form-group label,
+.modal-form .form-group label {
+    font-weight: 600;
+    margin-bottom: 8px;
+    display: block;
+    color: var(--text-color);
+}
+
+.small {
+    font-size: 0.88rem;
+    padding: 10px 14px;
+}
