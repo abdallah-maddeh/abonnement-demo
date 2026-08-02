@@ -5,6 +5,12 @@
 /.pnp
 .pnp.js
 
+
+# Dependencies
+node_modules/
+**/node_modules/
+
+
 # testing
 /coverage
 
