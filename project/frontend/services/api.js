@@ -345,11 +345,17 @@ const normalizeRole = (role) => {
 export const login = async (email, password, selectedRole = 'user') => {
     const roleKey = selectedRole === 'admin' ? 'admin' : 'user';
     const data = loadDemoData();
-    const requestedUser = data.utilisateurs.find((item) => item.email.toLowerCase() === String(email || '').trim().toLowerCase() && (roleKey === 'admin' ? item.role === 'admin' : item.role !== 'admin'));
-    const fallbackUser = data.utilisateurs.find((item) => roleKey === 'admin' ? item.role === 'admin' : item.role !== 'admin');
-    const demoUser = requestedUser || fallbackUser;
+
+    const demoUser = roleKey === 'admin'
+        ? data.utilisateurs.find((item) => item.role === 'admin') || data.utilisateurs[0]
+        : data.utilisateurs.find((item) => item.role === 'utilisateur') || data.utilisateurs[0];
+
     const user = demoUser
-        ? { ...demoUser, role: roleKey, email: demoUser.email }
+        ? {
+              ...demoUser,
+              role: roleKey,
+              email: demoUser.email,
+          }
         : {
               id: generateId(),
               prenom: roleKey === 'admin' ? 'Admin' : 'Ahmed',
