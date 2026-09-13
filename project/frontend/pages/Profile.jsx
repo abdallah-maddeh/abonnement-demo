@@ -1,466 +1,53 @@
-// filepath: project/frontend/pages/Profile.jsx
-// Page Profile - Affichage et modification du profil
-
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { CalendarDays, KeyRound, Mail, Save, ShieldCheck, UserRound } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { User } from 'lucide-react';
-import { getDefaultAuthenticatedPath, updateProfile, getCurrentUser, isAuthenticated } from '../services/api';
+import { getCurrentUser, getDefaultAuthenticatedPath, isAuthenticated, updateProfile } from '../services/api';
+import { Avatar, DetailRow, PageHeader, StatusBadge } from '../components/PremiumUI';
 
 const isValidEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || '').trim());
 
 const Profile = () => {
     const navigate = useNavigate();
-    const [userId, setUserId] = useState('');
-    const [role, setRole] = useState('');
-    const [createdAt, setCreatedAt] = useState('');
-    const [nom, setNom] = useState('');
-    const [prenom, setPrenom] = useState('');
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [confirmPassword, setConfirmPassword] = useState('');
-    const [error, setError] = useState('');
-    const [success, setSuccess] = useState('');
+    const [user, setUser] = useState(null);
+    const [form, setForm] = useState({ prenom: '', nom: '', email: '', password: '', confirmPassword: '' });
+    const [message, setMessage] = useState({ type: '', text: '' });
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        if (!isAuthenticated()) {
-            navigate('/');
-            return;
-        }
-
-        const user = getCurrentUser();
-        if (user) {
-            setUserId(user.id || '');
-            setRole(user.role || '');
-            setCreatedAt(user.dateCreation || '');
-            setNom(user.nom);
-            setPrenom(user.prenom);
-            setEmail(user.email);
-        }
+        if (!isAuthenticated()) { navigate('/'); return; }
+        const current = getCurrentUser();
+        setUser(current);
+        setForm({ prenom: current?.prenom || '', nom: current?.nom || '', email: current?.email || '', password: '', confirmPassword: '' });
     }, [navigate]);
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setError('');
-        setSuccess('');
+    const updateField = (field) => (event) => setForm((current) => ({ ...current, [field]: event.target.value }));
+    const save = async (event) => {
+        event.preventDefault(); setMessage({ type: '', text: '' });
+        if (!isValidEmail(form.email)) { setMessage({ type: 'error', text: 'Veuillez saisir une adresse email valide.' }); return; }
+        if (form.password && form.password !== form.confirmPassword) { setMessage({ type: 'error', text: 'Les mots de passe ne correspondent pas.' }); return; }
         setLoading(true);
-
-        try {
-            const trimmedEmail = email.trim();
-
-            if (!isValidEmail(trimmedEmail)) {
-                throw new Error('Veuillez saisir une adresse email valide.');
-            }
-
-            if (password && password !== confirmPassword) {
-                throw new Error('Les mots de passe ne correspondent pas.');
-            }
-
-            await updateProfile(prenom, nom, trimmedEmail, password);
-            setSuccess('Profil mis à jour avec succès !');
-            const updatedUser = { ...getCurrentUser(), prenom, nom, email: trimmedEmail };
-            localStorage.setItem('user', JSON.stringify(updatedUser));
-            setEmail(trimmedEmail);
-        } catch (err) {
-            setError(err.message);
-        } finally {
-            setLoading(false);
-        }
+        try { await updateProfile(form.prenom, form.nom, form.email.trim(), form.password); setUser({ ...getCurrentUser(), prenom: form.prenom, nom: form.nom, email: form.email.trim() }); setMessage({ type: 'success', text: 'Vos informations ont été mises à jour.' }); } catch (error) { setMessage({ type: 'error', text: error.message || 'Impossible de mettre à jour le profil.' }); } finally { setLoading(false); }
     };
 
-    return (
-        <div>
-            {/* Header */}
-            <div style={{
-                marginBottom: '30px'
-            }}>
-                <h1 style={{
-                    fontSize: '28px',
-                    fontWeight: 700,
-                    color: '#1E293B',
-                    margin: '0 0 8px'
-                }}>Profil utilisateur</h1>
-                <p style={{
-                    fontSize: '14px',
-                    color: '#64748B',
-                    margin: 0
-                }}>Gardez vos informations à jour et gérez votre mot de passe en toute simplicité.</p>
-            </div>
-
-            {/* Profile Card */}
-            <div style={{
-                background: '#ffffff',
-                borderRadius: '16px',
-                padding: '32px',
-                boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
-                border: '1px solid #F1F5F9'
-            }}>
-                {/* Avatar & Info */}
-                <div style={{
-                    display: 'flex',
-                    gap: '20px',
-                    alignItems: 'flex-start',
-                    marginBottom: '32px',
-                    paddingBottom: '32px',
-                    borderBottom: '1px solid #F1F5F9'
-                }}>
-                    <div style={{
-                        width: '72px',
-                        height: '72px',
-                        borderRadius: '50%',
-                        background: '#FFF7ED',
-                        border: '3px solid #F97316',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: '#F97316',
-                        flexShrink: 0
-                    }}>
-                        <User size={36} />
-                    </div>
-                    <div>
-                        <h2 style={{
-                            fontSize: '22px',
-                            fontWeight: 700,
-                            color: '#1E293B',
-                            margin: '0 0 8px'
-                        }}>
-                            {prenom} {nom}
-                        </h2>
-                        <span style={{
-                            display: 'inline-block',
-                            background: '#FFF7ED',
-                            color: '#F97316',
-                            border: '1px solid #FDBA74',
-                            borderRadius: '6px',
-                            fontSize: '12px',
-                            fontWeight: 600,
-                            padding: '4px 12px',
-                            marginBottom: '8px'
-                        }}>
-                            {role?.toUpperCase()}
-                        </span>
-                        <p style={{
-                            fontSize: '13px',
-                            color: '#64748B',
-                            margin: '8px 0 0'
-                        }}>
-                            Créé le {createdAt || 'N/A'}
-                        </p>
-                    </div>
-                </div>
-
-                {/* Form */}
-                <form onSubmit={handleSubmit}>
-                    {/* Messages */}
-                    {error && (
-                        <div style={{
-                            background: '#FEE2E2',
-                            border: '1px solid #FECACA',
-                            color: '#DC2626',
-                            padding: '12px 16px',
-                            borderRadius: '8px',
-                            marginBottom: '20px',
-                            fontSize: '13px'
-                        }}>
-                            ✕ {error}
-                        </div>
-                    )}
-                    {success && (
-                        <div style={{
-                            background: '#DBEAFE',
-                            border: '1px solid #BFDBFE',
-                            color: '#1E40AF',
-                            padding: '12px 16px',
-                            borderRadius: '8px',
-                            marginBottom: '20px',
-                            fontSize: '13px'
-                        }}>
-                            ✓ {success}
-                        </div>
-                    )}
-
-                    {/* Personal Info Section */}
-                    <div style={{ marginBottom: '28px' }}>
-                        <h3 style={{
-                            fontSize: '16px',
-                            fontWeight: 600,
-                            color: '#1E293B',
-                            margin: '0 0 16px'
-                        }}>Informations personnelles</h3>
-
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
-                            <div>
-                                <label
-                                    htmlFor="prenom"
-                                    style={{
-                                        display: 'block',
-                                        fontSize: '13px',
-                                        fontWeight: 600,
-                                        color: '#475569',
-                                        marginBottom: '6px'
-                                    }}
-                                >
-                                    Prénom
-                                </label>
-                                <input
-                                    type="text"
-                                    id="prenom"
-                                    value={prenom}
-                                    onChange={(e) => setPrenom(e.target.value)}
-                                    required
-                                    style={{
-                                        width: '100%',
-                                        padding: '12px 16px',
-                                        border: '1.5px solid #E2E8F0',
-                                        borderRadius: '10px',
-                                        fontSize: '14px',
-                                        outline: 'none',
-                                        transition: 'all 0.2s ease'
-                                    }}
-                                    onFocus={(e) => {
-                                        e.currentTarget.style.borderColor = '#F97316';
-                                        e.currentTarget.style.background = '#FFFBF7';
-                                    }}
-                                    onBlur={(e) => {
-                                        e.currentTarget.style.borderColor = '#E2E8F0';
-                                        e.currentTarget.style.background = '#ffffff';
-                                    }}
-                                />
-                            </div>
-                            <div>
-                                <label
-                                    htmlFor="nom"
-                                    style={{
-                                        display: 'block',
-                                        fontSize: '13px',
-                                        fontWeight: 600,
-                                        color: '#475569',
-                                        marginBottom: '6px'
-                                    }}
-                                >
-                                    Nom
-                                </label>
-                                <input
-                                    type="text"
-                                    id="nom"
-                                    value={nom}
-                                    onChange={(e) => setNom(e.target.value)}
-                                    required
-                                    style={{
-                                        width: '100%',
-                                        padding: '12px 16px',
-                                        border: '1.5px solid #E2E8F0',
-                                        borderRadius: '10px',
-                                        fontSize: '14px',
-                                        outline: 'none',
-                                        transition: 'all 0.2s ease'
-                                    }}
-                                    onFocus={(e) => {
-                                        e.currentTarget.style.borderColor = '#F97316';
-                                        e.currentTarget.style.background = '#FFFBF7';
-                                    }}
-                                    onBlur={(e) => {
-                                        e.currentTarget.style.borderColor = '#E2E8F0';
-                                        e.currentTarget.style.background = '#ffffff';
-                                    }}
-                                />
-                            </div>
-                        </div>
-
-                        <div>
-                            <label
-                                htmlFor="email"
-                                style={{
-                                    display: 'block',
-                                    fontSize: '13px',
-                                    fontWeight: 600,
-                                    color: '#475569',
-                                    marginBottom: '6px'
-                                }}
-                            >
-                                Email
-                            </label>
-                            <input
-                                type="email"
-                                id="email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                pattern="^[^\s@]+@[^\s@]+\.[^\s@]+$"
-                                title="Veuillez saisir une adresse email valide, par exemple nom@example.com"
-                                required
-                                style={{
-                                    width: '100%',
-                                    padding: '12px 16px',
-                                    border: '1.5px solid #E2E8F0',
-                                    borderRadius: '10px',
-                                    fontSize: '14px',
-                                    outline: 'none',
-                                    transition: 'all 0.2s ease'
-                                }}
-                                onFocus={(e) => {
-                                    e.currentTarget.style.borderColor = '#F97316';
-                                    e.currentTarget.style.background = '#FFFBF7';
-                                }}
-                                onBlur={(e) => {
-                                    e.currentTarget.style.borderColor = '#E2E8F0';
-                                    e.currentTarget.style.background = '#ffffff';
-                                }}
-                            />
-                        </div>
-                    </div>
-
-                    {/* Password Section */}
-                    <div style={{
-                        marginBottom: '28px',
-                        paddingBottom: '28px',
-                        borderBottom: '1px solid #F1F5F9'
-                    }}>
-                        <h3 style={{
-                            fontSize: '16px',
-                            fontWeight: 600,
-                            color: '#1E293B',
-                            margin: '0 0 16px'
-                        }}>Mot de passe</h3>
-
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                            <div>
-                                <label
-                                    htmlFor="password"
-                                    style={{
-                                        display: 'block',
-                                        fontSize: '13px',
-                                        fontWeight: 600,
-                                        color: '#475569',
-                                        marginBottom: '6px'
-                                    }}
-                                >
-                                    Nouveau mot de passe
-                                </label>
-                                <input
-                                    type="password"
-                                    id="password"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    placeholder="Laisser vide pour garder l'ancien"
-                                    style={{
-                                        width: '100%',
-                                        padding: '12px 16px',
-                                        border: '1.5px solid #E2E8F0',
-                                        borderRadius: '10px',
-                                        fontSize: '14px',
-                                        outline: 'none',
-                                        transition: 'all 0.2s ease'
-                                    }}
-                                    onFocus={(e) => {
-                                        e.currentTarget.style.borderColor = '#F97316';
-                                        e.currentTarget.style.background = '#FFFBF7';
-                                    }}
-                                    onBlur={(e) => {
-                                        e.currentTarget.style.borderColor = '#E2E8F0';
-                                        e.currentTarget.style.background = '#ffffff';
-                                    }}
-                                />
-                            </div>
-                            <div>
-                                <label
-                                    htmlFor="confirmPassword"
-                                    style={{
-                                        display: 'block',
-                                        fontSize: '13px',
-                                        fontWeight: 600,
-                                        color: '#475569',
-                                        marginBottom: '6px'
-                                    }}
-                                >
-                                    Confirmer le mot de passe
-                                </label>
-                                <input
-                                    type="password"
-                                    id="confirmPassword"
-                                    value={confirmPassword}
-                                    onChange={(e) => setConfirmPassword(e.target.value)}
-                                    placeholder="Confirmez le nouveau mot de passe"
-                                    style={{
-                                        width: '100%',
-                                        padding: '12px 16px',
-                                        border: '1.5px solid #E2E8F0',
-                                        borderRadius: '10px',
-                                        fontSize: '14px',
-                                        outline: 'none',
-                                        transition: 'all 0.2s ease'
-                                    }}
-                                    onFocus={(e) => {
-                                        e.currentTarget.style.borderColor = '#F97316';
-                                        e.currentTarget.style.background = '#FFFBF7';
-                                    }}
-                                    onBlur={(e) => {
-                                        e.currentTarget.style.borderColor = '#E2E8F0';
-                                        e.currentTarget.style.background = '#ffffff';
-                                    }}
-                                />
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Action Buttons */}
-                    <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-start' }}>
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            style={{
-                                padding: '12px 28px',
-                                background: '#F97316',
-                                color: '#ffffff',
-                                border: 'none',
-                                borderRadius: '10px',
-                                fontWeight: 600,
-                                fontSize: '14px',
-                                cursor: loading ? 'not-allowed' : 'pointer',
-                                transition: 'all 0.2s ease',
-                                opacity: loading ? 0.7 : 1
-                            }}
-                            onMouseEnter={(e) => {
-                                if (!loading) {
-                                    e.currentTarget.style.background = '#EA580C';
-                                }
-                            }}
-                            onMouseLeave={(e) => {
-                                if (!loading) {
-                                    e.currentTarget.style.background = '#F97316';
-                                }
-                            }}
-                        >
-                            {loading ? 'Sauvegarde...' : 'Sauvegarder'}
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => navigate(getDefaultAuthenticatedPath())}
-                            style={{
-                                padding: '12px 28px',
-                                background: '#F1F5F9',
-                                color: '#64748B',
-                                border: 'none',
-                                borderRadius: '10px',
-                                fontWeight: 600,
-                                fontSize: '14px',
-                                cursor: 'pointer',
-                                transition: 'all 0.2s ease'
-                            }}
-                            onMouseEnter={(e) => {
-                                e.currentTarget.style.background = '#E2E8F0';
-                            }}
-                            onMouseLeave={(e) => {
-                                e.currentTarget.style.background = '#F1F5F9';
-                            }}
-                        >
-                            Retour
-                        </button>
-                    </div>
-                </form>
-            </div>
+    if (!user) return null;
+    return <div className="page-shell">
+        <PageHeader eyebrow="Compte" title="Mon profil" subtitle="Gérez vos informations personnelles et les paramètres de votre compte." />
+        {message.text && <div className={`${message.type}-message`}>{message.text}</div>}
+        <div className="profile-premium-grid">
+            <section className="surface profile-identity-card"><div className="profile-identity-top"><Avatar name={`${user.prenom} ${user.nom}`} size="lg" /><div><h2>{user.prenom} {user.nom}</h2><p>{user.email}</p><StatusBadge status={user.actif === false ? 'refusee' : 'actif'} /></div></div><div className="profile-identity-meta"><DetailRow label="Rôle">{user.role === 'admin' ? 'Administrateur' : 'Utilisateur'}</DetailRow><DetailRow label="Membre depuis">{user.dateCreation || 'Janvier 2026'}</DetailRow><DetailRow label="Compte">{user.actif === false ? 'Désactivé' : 'Actif'}</DetailRow></div></section>
+            <form className="surface profile-form-card" onSubmit={save}>
+                <div className="section-heading"><div className="section-icon"><UserRound size={17} /></div><div><h2>Informations personnelles</h2><p>Ces informations sont utilisées pour vos demandes.</p></div></div>
+                <div className="profile-form-grid"><Field label="Prénom" value={form.prenom} onChange={updateField('prenom')} /><Field label="Nom" value={form.nom} onChange={updateField('nom')} /><Field label="Email" value={form.email} onChange={updateField('email')} type="email" wide /></div>
+                <div className="profile-divider" />
+                <div className="section-heading"><div className="section-icon"><KeyRound size={17} /></div><div><h2>Sécurité du compte</h2><p>Laissez les champs vides pour conserver votre mot de passe actuel.</p></div></div>
+                <div className="profile-form-grid"><Field label="Nouveau mot de passe" value={form.password} onChange={updateField('password')} type="password" /><Field label="Confirmer le mot de passe" value={form.confirmPassword} onChange={updateField('confirmPassword')} type="password" /></div>
+                <div className="profile-actions"><button className="btn-secondary" type="button" onClick={() => navigate(getDefaultAuthenticatedPath())}>Retour</button><button className="btn-primary" type="submit" disabled={loading}><Save size={15} /> {loading ? 'Enregistrement...' : 'Enregistrer'}</button></div>
+            </form>
+            <section className="surface profile-account-card"><div className="section-heading"><div className="section-icon"><ShieldCheck size={17} /></div><div><h2>Informations du compte</h2><p>État actuel de votre accès SRTB.</p></div></div><DetailRow label="Identifiant">{user.id}</DetailRow><DetailRow label="Rôle">{user.role === 'admin' ? 'Administrateur' : 'Utilisateur'}</DetailRow><DetailRow label="Statut"><span className="account-active"><span /> Actif</span></DetailRow><DetailRow label="Dernière mise à jour"><CalendarDays size={14} /> Aujourd'hui</DetailRow></section>
         </div>
-    );
+    </div>;
 };
+
+const Field = ({ label, value, onChange, type = 'text', wide = false }) => <label className={`premium-field${wide ? ' field-wide' : ''}`}><span>{label}</span><div className="field-control">{label === 'Email' && <Mail size={15} />}<input type={type} value={value} onChange={onChange} required={type !== 'password'} /></div></label>;
 
 export default Profile;

@@ -1,42 +1,19 @@
+import { useState } from 'react';
 import Sidebar from './Sidebar';
 import Navbar from './Navbar';
 
 const AppLayout = ({ children }) => {
+    const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
     return (
-        <div style={{
-            display: 'flex',
-            flexDirection: 'column',
-            minHeight: '100vh',
-            background: '#F8FAFC'
-        }}>
-            <div style={{
-                background: '#f8fafc',
-                color: '#334155',
-                textAlign: 'center',
-                padding: '8px 16px',
-                fontSize: '13px',
-                borderBottom: '1px solid rgba(15, 23, 42, 0.08)'
-            }}>
-                🚀 DEMO VERSION - Les données affichées sont fictives.
-            </div>
-            <div style={{
-                display: 'flex',
-                flex: 1,
-                overflow: 'hidden'
-            }}>
-                <Sidebar />
-                <div style={{
-                    flex: 1,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    overflow: 'hidden'
-                }}>
-                    <Navbar />
-                    <main style={{
-                        flex: 1,
-                        overflow: 'auto',
-                        padding: '30px 40px'
-                    }}>
+        <div className="app-shell">
+            <div className="demo-strip">Mode démonstration · Les données affichées sont fictives.</div>
+            <div className="shell-body">
+                <Sidebar collapsed={sidebarCollapsed} open={sidebarOpen} />
+                <div className="shell-content">
+                    <Navbar onMenu={() => setSidebarOpen((value) => !value)} onCollapse={() => setSidebarCollapsed((value) => !value)} />
+                    <main className="shell-main">
                         {children}
                     </main>
                 </div>

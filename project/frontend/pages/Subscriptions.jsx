@@ -1,1889 +1,377 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { ArrowRight, ArrowUpRight, BriefcaseBusiness, Building2, CalendarCheck, CalendarDays, CalendarRange, CheckCircle2, Clock3, Crown, Download, Edit3, GraduationCap, Layers3, MapPin, Plus, QrCode, School, Search, Trash2 } from 'lucide-react';
 import { QRCodeCanvas } from 'qrcode.react';
-import { getCurrentUser, getSubscriptions, createSubscription, updateSubscription, deleteSubscription } from '../services/api';
+import { Link } from 'react-router-dom';
+import { createSubscription, deleteSubscription, getCurrentUser, getSubscriptions, updateSubscription } from '../services/api';
 import Modal from '../components/Modal';
-import { Plus, Filter, Edit2, Trash2, Package, CheckCircle2, AlertCircle } from 'lucide-react';
+import { EmptyState, FilterBar, PageHeader, StatCard, StatusBadge } from '../components/PremiumUI';
 
-const statusLabels = {
-    validee: 'Validé',
-    actif: 'Actif',
-    expire: 'Expiré',
+const dateValue = (value) => value ? new Date(value) : null;
+const dateLabel = (value) => value ? dateValue(value).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) : '-';
+const normalizedStatus = (item) => { const end = dateValue(item.dateFin); if (['actif', 'validee'].includes(String(item.status).toLowerCase()) && end && end >= new Date()) return 'actif'; return String(item.status || 'expire').toLowerCase(); };
+const validity = (item) => { const start = dateValue(item.dateDebut); const end = dateValue(item.dateFin); const now = new Date(); if (!start || !end) return { percent: 0, days: 0 }; const total = Math.max(end - start, 1); const used = Math.min(Math.max(now - start, 0), total); return { percent: Math.round((used / total) * 100), days: Math.max(Math.ceil((end - now) / 86400000), 0) }; };
+
+export const subscriptionCatalogFallback = [
+    {
+        id: 'Scolaire',
+        title: 'Abonnement Scolaire',
+        description: 'Une formule adaptée aux déplacements quotidiens des élèves, avec des trajets simples et fiables.',
+        eligibility: 'Élèves',
+        duration: '1 mois',
+        price: '15 DT',
+        priceNote: 'Par mois',
+        badge: 'POPULAIRE',
+        accent: 'blue',
+        accentColor: '#3b82f6',
+        accentSoft: 'rgba(59, 130, 246, 0.18)',
+        accentGlow: 'rgba(59, 130, 246, 0.28)',
+        icon: 'GraduationCap',
+        benefits: ['Trajets domicile-établissement', 'Tarifs préférentiels', 'Suivi simple'],
+    },
+    {
+        id: 'Universitaire',
+        title: 'Abonnement Universitaire',
+        description: 'Une solution pratique pour les étudiants qui souhaitent voyager facilement entre domicile, campus et résidence.',
+        eligibility: 'Étudiants',
+        duration: '1 mois',
+        price: '20 DT',
+        priceNote: 'Par mois',
+        badge: 'ÉTUDIANT',
+        accent: 'violet',
+        accentColor: '#8b5cf6',
+        accentSoft: 'rgba(139, 92, 246, 0.18)',
+        accentGlow: 'rgba(139, 92, 246, 0.28)',
+        icon: 'School',
+        benefits: ['Accès rapide aux lignes majeures', 'Tarif étudiant', 'Gestion simplifiée'],
+    },
+    {
+        id: 'Professionnel',
+        title: 'Abonnement Professionnel',
+        description: 'Une formule pensée pour les déplacements professionnels quotidiens, avec un confort de mobilité optimal.',
+        eligibility: 'Professionnels',
+        duration: '1 mois',
+        price: '35 DT',
+        priceNote: 'Par mois',
+        badge: 'PRO',
+        accent: 'emerald',
+        accentColor: '#10b981',
+        accentSoft: 'rgba(16, 185, 129, 0.18)',
+        accentGlow: 'rgba(16, 185, 129, 0.28)',
+        icon: 'BriefcaseBusiness',
+        benefits: ['Trajets domicile-travail', 'Assistance prioritaire', 'Confort quotidien'],
+    },
+    {
+        id: 'Mensuel',
+        title: 'Abonnement Mensuel',
+        description: 'Voyagez librement pendant tout le mois avec une formule souple et accessible à tous.',
+        eligibility: 'Tout public',
+        duration: '1 mois',
+        price: '40 DT',
+        priceNote: 'Par mois',
+        badge: 'FLEXIBLE',
+        accent: 'cyan',
+        accentColor: '#06b6d4',
+        accentSoft: 'rgba(6, 182, 212, 0.18)',
+        accentGlow: 'rgba(6, 182, 212, 0.28)',
+        icon: 'CalendarDays',
+        benefits: ['Flexibilité maximale', 'Paiement simple', 'Disponibilité immédiate'],
+    },
+    {
+        id: 'Trimestriel',
+        title: 'Abonnement Trimestriel',
+        description: 'Une formule économique pour vos déplacements réguliers sur plusieurs mois.',
+        eligibility: 'Tout public',
+        duration: '3 mois',
+        price: '105 DT',
+        priceNote: 'Par trimestre',
+        badge: 'ÉCONOMIQUE',
+        accent: 'orange',
+        accentColor: '#f59e0b',
+        accentSoft: 'rgba(245, 158, 11, 0.18)',
+        accentGlow: 'rgba(245, 158, 11, 0.28)',
+        icon: 'CalendarRange',
+        benefits: ['Économie sur 3 mois', 'Mieux adapté aux habitudes', 'Régularité assurée'],
+    },
+    {
+        id: 'Annuel',
+        title: 'Abonnement Annuel',
+        description: 'La formule complète pour voyager toute l’année avec des avantages de long terme.',
+        eligibility: 'Tout public',
+        duration: '12 mois',
+        price: '380 DT',
+        priceNote: 'Par an',
+        badge: 'MEILLEUR PLAN',
+        accent: 'indigo',
+        accentColor: '#6366f1',
+        accentSoft: 'rgba(99, 102, 241, 0.18)',
+        accentGlow: 'rgba(99, 102, 241, 0.28)',
+        icon: 'CalendarCheck',
+        benefits: ['Tarif annuel optimisé', 'Réseau complet', 'Priorité d’assistance'],
+    },
+    {
+        id: 'VIP',
+        title: 'Abonnement VIP',
+        description: 'Une expérience premium pensée pour les voyageurs privilégiés qui recherchent un confort d’exception.',
+        eligibility: 'Membres VIP',
+        duration: '12 mois',
+        price: 'Premium',
+        priceNote: 'Formule exclusive',
+        badge: 'EXCLUSIF',
+        accent: 'gold',
+        accentColor: '#d4a85f',
+        accentSoft: 'rgba(212, 168, 95, 0.18)',
+        accentGlow: 'rgba(212, 168, 95, 0.32)',
+        icon: 'Crown',
+        benefits: ['Accès prioritaire', 'Service premium', 'Expérience haut de gamme'],
+    },
+    {
+        id: 'Personnel',
+        title: 'Abonnement Personnel SRTB',
+        description: 'Une formule dédiée aux agents et employés de la SRTB pour faciliter les déplacements professionnels internes.',
+        eligibility: 'Personnel SRTB',
+        duration: 'Selon politique interne',
+        price: 'Tarif personnel',
+        priceNote: 'Réservé aux agents',
+        badge: 'PERSONNEL SRTB',
+        accent: 'royal',
+        accentColor: '#1d4ed8',
+        accentSoft: 'rgba(29, 78, 216, 0.18)',
+        accentGlow: 'rgba(29, 78, 216, 0.28)',
+        icon: 'Building2',
+        benefits: ['Déplacements internes facilités', 'Accès réservé', 'Politiques internes appliquées'],
+    },
+];
+
+const subscriptionIcons = {
+    GraduationCap,
+    School,
+    BriefcaseBusiness,
+    CalendarDays,
+    CalendarRange,
+    CalendarCheck,
+    Crown,
+    Building2,
 };
 
-const statusFilters = ['all', 'validee', 'actif', 'expire'];
+const normalizeDuration = (value, fallback = '1 mois') => {
+    if (typeof value === 'number') return `${value} mois`;
 
-const toDateOnly = (value) => {
-    if (!value) return null;
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return null;
-    date.setHours(0, 0, 0, 0);
-    return date;
+    const normalized = String(value || '').trim().toLowerCase();
+    if (!normalized) return fallback;
+
+    if (normalized.includes('year') || normalized.includes('anne') || normalized.includes('12')) return '12 mois';
+    if (normalized.includes('trim') || normalized.includes('3')) return '3 mois';
+    if (normalized.includes('month') || normalized.includes('mens') || normalized.includes('1')) return '1 mois';
+    if (normalized.includes('politique') || normalized.includes('interne')) return 'Selon politique interne';
+
+    return fallback;
 };
 
-const formatDisplayDate = (value) => {
-    if (!value) return '-';
-    return String(value).split('T')[0];
-};
-
-const toDateInputValue = (value) => {
-    if (!value) return '';
-    return String(value).split('T')[0];
-};
-
-const padDatePart = (value) => String(value).padStart(2, '0');
-
-const getTodayInputValue = () => {
-    const today = new Date();
-    return [
-        today.getFullYear(),
-        padDatePart(today.getMonth() + 1),
-        padDatePart(today.getDate()),
-    ].join('-');
-};
-
-const parseDateInputValue = (value) => {
-    const text = String(value || '').trim();
-    const isoMatch = text.match(/^(\d{4})-(\d{2})-(\d{2})/);
-    const frMatch = text.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-    const match = isoMatch || frMatch;
-
-    if (!match) {
-        return null;
+const formatPrice = (value, fallback = '15 DT') => {
+    if (typeof value === 'number' && Number.isFinite(value)) {
+        return `${value.toLocaleString('fr-FR')} DT`;
     }
 
-    const year = Number(isoMatch ? match[1] : match[3]);
-    const month = Number(isoMatch ? match[2] : match[2]);
-    const day = Number(isoMatch ? match[3] : match[1]);
-    const date = new Date(year, month - 1, day);
+    if (typeof value === 'string') {
+        const trimmed = value.trim();
+        if (!trimmed || trimmed === 'null' || trimmed === 'undefined') {
+            return fallback;
+        }
 
-    if (
-        date.getFullYear() !== year ||
-        date.getMonth() !== month - 1 ||
-        date.getDate() !== day
-    ) {
-        return null;
-    }
-
-    date.setHours(0, 0, 0, 0);
-    return date;
-};
-
-const addDaysToInputDate = (value, days) => {
-    const date = parseDateInputValue(value);
-    if (!date) return '';
-    date.setDate(date.getDate() + days);
-    return [
-        date.getFullYear(),
-        padDatePart(date.getMonth() + 1),
-        padDatePart(date.getDate()),
-    ].join('-');
-};
-
-const validateDateRange = (dateDebut, dateFin) => {
-    const startDate = parseDateInputValue(dateDebut);
-    const endDate = parseDateInputValue(dateFin);
-
-    if (!startDate || !endDate) {
-        return 'Veuillez saisir des dates valides.';
-    }
-
-    const today = parseDateInputValue(getTodayInputValue());
-    if (startDate < today) {
-        return "La date de debut doit etre aujourd'hui ou une date future.";
-    }
-
-    if (endDate <= startDate) {
-        return 'La date de fin doit etre apres la date de debut.';
-    }
-
-    return '';
-};
-
-const getExpirationWarning = (item) => {
-    const endDate = toDateOnly(item.dateFin);
-    if (!endDate || !isValidatedSubscription(item)) {
-        return null;
-    }
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const daysLeft = Math.round((endDate.getTime() - today.getTime()) / 86400000);
-
-    if (daysLeft === 7) {
-        return { label: 'Expire dans 7 jours', background: '#FFF7ED', color: '#EA580C', border: '#FDBA74' };
-    }
-
-    if (daysLeft === 3) {
-        return { label: 'Expire dans 3 jours', background: '#FEF3C7', color: '#B45309', border: '#FCD34D' };
-    }
-
-    if (daysLeft === 1) {
-        return { label: 'Expire demain', background: '#FEE2E2', color: '#DC2626', border: '#FECACA' };
-    }
-
-    if (daysLeft === 0) {
-        return { label: "Expire aujourd'hui", background: '#FEE2E2', color: '#DC2626', border: '#FECACA' };
-    }
-
-    if (daysLeft < 0) {
-        return { label: 'Expiré', background: '#7F1D1D', color: '#FFFFFF', border: '#7F1D1D' };
-    }
-
-    return null;
-};
-
-const normalizeText = (value) => String(value || '')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .trim()
-    .toLowerCase();
-
-const normalizeStatus = (value) => {
-    const status = normalizeText(value);
-    if (status.includes('expir')) return 'expire';
-    if (status.includes('valid')) return 'validee';
-    if (status.includes('actif')) return 'actif';
-    return status;
-};
-
-const isValidatedSubscription = (item) => {
-    const status = normalizeStatus(item.status);
-    return status === 'validee' || status === 'actif';
-};
-
-const isExpiredByDate = (item) => {
-    const endDate = toDateOnly(item.dateFin);
-    if (!endDate || !isValidatedSubscription(item)) {
-        return normalizeStatus(item.status) === 'expire';
-    }
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    return endDate < today;
-};
-
-const getDisplayStatus = (item) => {
-    if (isValidatedSubscription(item) && !isExpiredByDate(item)) {
-        return 'actif';
-    }
-
-    if (isExpiredByDate(item)) {
-        return 'expire';
-    }
-
-    return normalizeStatus(item.status);
-};
-
-const isVisibleAdminSubscription = (item) => {
-    const status = getDisplayStatus(item);
-    return status === 'validee' || status === 'actif' || status === 'expire';
-};
-
-const Subscriptions = () => {
-    const user = getCurrentUser();
-    const isAdmin = user?.role === 'admin';
-    const [subscriptions, setSubscriptions] = useState([]);
-    const [filter, setFilter] = useState('all');
-    const [search, setSearch] = useState('');
-    const [modalVisible, setModalVisible] = useState(false);
-    const [selectedSubscription, setSelectedSubscription] = useState(null);
-    const [formData, setFormData] = useState({
-        titre: '',
-        type: 'Mensuel',
-        ligne: 'Ligne 1',
-        prix: 1200,
-        dateDebut: '',
-        dateFin: '',
-        status: 'actif',
-        userPrenom: '',
-        userNom: '',
-        userEmail: '',
-    });
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState('');
-    const [success, setSuccess] = useState('');
-    const [flippedCards, setFlippedCards] = useState({});
-    const [userModalVisible, setUserModalVisible] = useState(false);
-    const [userModalMode, setUserModalMode] = useState('create');
-    const [userLoading, setUserLoading] = useState(false);
-    const [userFormData, setUserFormData] = useState({
-        id: '',
-        type: 'Mensuel',
-        ligne: 'Ligne 1',
-        ligneArrivee: '',
-        prix: 1200,
-        dateDebut: '',
-        dateFin: '',
-        nom: '',
-        prenom: '',
-        ctt: '',
-    });
-
-    useEffect(() => {
-        const load = async () => {
-            try {
-                const data = await getSubscriptions();
-                const items = data.subscriptions || [];
-                setSubscriptions(isAdmin ? items.filter(isVisibleAdminSubscription) : items);
-            } catch (err) {
-                setError(err.message);
+        const clean = trimmed.replace(/(TND|DT|dt)/gi, '').trim();
+        if (clean) {
+            if (/^\d+(?:[.,]\d+)?$/.test(clean)) {
+                return `${Number(clean.replace(',', '.')).toLocaleString('fr-FR')} DT`;
             }
-        };
-
-        load();
-    }, [isAdmin]);
-
-    const filteredSubscriptions = useMemo(() => {
-        return subscriptions.filter((item) => {
-            const searchText = [item.titre, item.type, item.ligne, item.userPrenom, item.userNom, item.userEmail]
-                .filter(Boolean)
-                .join(' ')
-                .toLowerCase();
-            const matchesSearch = searchText.includes(search.toLowerCase());
-            const matchesFilter = filter === 'all'
-                || (filter === 'validee'
-                    ? normalizeStatus(item.status) === 'validee'
-                    : getDisplayStatus(item) === filter);
-            return matchesSearch && matchesFilter;
-        });
-    }, [subscriptions, search, filter]);
-
-    const stats = useMemo(() => {
-        const validee = subscriptions.filter((item) => normalizeStatus(item.status) === 'validee').length;
-        const actif = subscriptions.filter((item) => getDisplayStatus(item) === 'actif').length;
-        const expire = subscriptions.filter((item) => getDisplayStatus(item) === 'expire').length;
-        return { validee, actif, expire, total: subscriptions.length };
-    }, [subscriptions]);
-
-    const userActiveSubscriptions = useMemo(() => {
-        if (isAdmin) {
-            return [];
+            return trimmed;
         }
+    }
 
-        return subscriptions.filter((item) => {
-            return getDisplayStatus(item) === 'actif';
-        });
-    }, [subscriptions, isAdmin]);
+    return fallback;
+};
 
-    const userSubscription = userActiveSubscriptions[0] || null;
+const normalizeSubscriptionType = (item, index) => {
+    const fallback = subscriptionCatalogFallback.find((entry) => entry.id.toLowerCase() === String(item?.id || '').toLowerCase())
+        || subscriptionCatalogFallback[index % subscriptionCatalogFallback.length];
 
-    const buildSubscriptionQrData = (subscription) => {
-        const status = getDisplayStatus(subscription);
-        return [
-            'Abonnement SRTB',
-            `Nom : ${subscription.nom || subscription.userNom || '-'}`,
-            `Prénom : ${subscription.prenom || subscription.userPrenom || '-'}`,
-            `Contact : ${subscription.ctt || subscription.userEmail || '-'}`,
-            `Type d'abonnement : ${subscription.type || '-'}`,
-            `Ligne : ${subscription.ligne || '-'}`,
-            `Date début : ${formatDisplayDate(subscription.dateDebut)}`,
-            `Date fin : ${formatDisplayDate(subscription.dateFin)}`,
-            `Statut : ${statusLabels[status] || status || '-'}`,
-            `ID abonnement : ${subscription.id || '-'}`,
-        ].join('\n');
+    const raw = item && typeof item === 'object' ? item : {};
+    const id = String(raw.id || fallback.id || `type-${index + 1}`);
+
+    return {
+        ...fallback,
+        ...raw,
+        id,
+        title: raw.title || raw.label || fallback.title || `Abonnement ${id}`,
+        description: raw.description || fallback.description || 'Une solution pensée pour accompagner vos déplacements.',
+        eligibility: raw.eligibility || fallback.eligibility || 'Tout public',
+        duration: normalizeDuration(raw.duration || raw.period || fallback.duration, fallback.duration),
+        price: formatPrice(raw.price ?? raw.basePrice ?? raw.tarif ?? raw.priceLabel, fallback.price),
+        priceNote: raw.priceNote || fallback.priceNote || 'À partir de',
+        badge: raw.badge || fallback.badge || '',
+        accent: raw.accent || fallback.accent || 'blue',
+        accentColor: raw.accentColor || fallback.accentColor || '#3b82f6',
+        accentSoft: raw.accentSoft || fallback.accentSoft || 'rgba(59, 130, 246, 0.18)',
+        accentGlow: raw.accentGlow || fallback.accentGlow || 'rgba(59, 130, 246, 0.28)',
+        icon: raw.icon || fallback.icon || 'CalendarDays',
+        benefits: Array.isArray(raw.benefits) && raw.benefits.length ? raw.benefits : fallback.benefits || [],
     };
+};
 
-    const toggleCardFlip = (subscriptionId) => {
-        setFlippedCards((current) => ({
-            ...current,
-            [subscriptionId]: !current[subscriptionId],
-        }));
-    };
+const normalizeSubscriptionTypes = (items) => {
+    if (!Array.isArray(items) || items.length === 0) {
+        return subscriptionCatalogFallback;
+    }
 
-    const openAddModal = () => {
-        setSelectedSubscription(null);
-        setFormData({
-            titre: '',
-            type: 'Mensuel',
-            ligne: 'Ligne 1',
-            prix: 1200,
-            dateDebut: '',
-            dateFin: '',
-            status: 'actif',
-            userPrenom: '',
-            userNom: '',
-            userEmail: '',
-        });
-        setError('');
-        setSuccess('');
-        setModalVisible(true);
-    };
+    return items.map((item, index) => normalizeSubscriptionType(item, index));
+};
 
-    const openEditModal = (subscription) => {
-        setSelectedSubscription(subscription);
-        setFormData({
-            titre: subscription.titre || subscription.type || 'Abonnement',
-            type: subscription.type || 'Mensuel',
-            ligne: subscription.ligne || '',
-            prix: subscription.prix || 0,
-            dateDebut: toDateInputValue(subscription.dateDebut),
-            dateFin: toDateInputValue(subscription.dateFin),
-            status: subscription.status || 'actif',
-            userPrenom: subscription.userPrenom || '',
-            userNom: subscription.userNom || '',
-            userEmail: subscription.userEmail || '',
-        });
-        setError('');
-        setSuccess('');
-        setModalVisible(true);
-    };
-
-    const handleSaveSubscription = async (e) => {
-        e.preventDefault();
-        setLoading(true);
-        setError('');
-        setSuccess('');
-
-        if (!formData.ligne || !formData.dateDebut || !formData.dateFin) {
-            setError('Veuillez renseigner la ligne et les dates.');
-            setLoading(false);
-            return;
-        }
-
-        const dateError = validateDateRange(formData.dateDebut, formData.dateFin);
-        if (dateError) {
-            setError(dateError);
-            setLoading(false);
-            return;
-        }
-
-        try {
-            const payload = {
-                ...formData,
-                titre: formData.titre || formData.type || 'Abonnement',
-            };
-
-            if (selectedSubscription) {
-                const response = await updateSubscription(selectedSubscription.id, payload);
-                setSubscriptions(subscriptions.map((item) => (item.id === selectedSubscription.id ? response.subscription : item)));
-                setSuccess('Abonnement mis à jour.');
-            } else {
-                const response = await createSubscription(payload);
-                setSubscriptions([response.subscription, ...subscriptions]);
-                setSuccess('Abonnement créé.');
-            }
-            setModalVisible(false);
-        } catch (err) {
-            setError(err.message);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleDelete = async (subscription) => {
-        setLoading(true);
-        setError('');
-        try {
-            await deleteSubscription(subscription.id);
-            setSubscriptions(subscriptions.filter((item) => item.id !== subscription.id));
-            setSuccess('Abonnement supprimé.');
-        } catch (err) {
-            setError(err.message);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const openUserCreateModal = () => {
-        setUserModalMode('create');
-        setUserFormData({
-            id: '',
-            type: 'Mensuel',
-            ligne: 'Ligne 1',
-            ligneArrivee: '',
-            prix: 1200,
-            dateDebut: '',
-            dateFin: '',
-            nom: '',
-            prenom: '',
-            ctt: '',
-        });
-        setError('');
-        setSuccess('');
-        setUserModalVisible(true);
-    };
-
-    const openUserEditModal = (subscription) => {
-        setUserModalMode('edit');
-        setUserFormData({
-            id: subscription.id,
-            type: subscription.type,
-            ligne: subscription.ligne,
-            ligneArrivee: subscription.ligneArrivee || '',
-            prix: subscription.prix,
-            dateDebut: subscription.dateDebut,
-            dateFin: subscription.dateFin,
-            nom: subscription.nom || '',
-            prenom: subscription.prenom || '',
-            ctt: subscription.ctt || '',
-        });
-        setSelectedSubscription(subscription);
-        setError('');
-        setSuccess('');
-        setUserModalVisible(true);
-    };
-
-    const handleUserSave = async (e) => {
-        e.preventDefault();
-        setUserLoading(true);
-        setError('');
-        setSuccess('');
-        try {
-            if (userModalMode === 'edit' && selectedSubscription) {
-                // Send only editable fields: nom, prenom, ctt
-                const payload = {
-                    nom: userFormData.nom,
-                    prenom: userFormData.prenom,
-                    ctt: userFormData.ctt,
-                };
-                const response = await updateSubscription(selectedSubscription.id, payload);
-                setSubscriptions(subscriptions.map((item) =>
-                    item.id === selectedSubscription.id ? response.subscription : item
-                ));
-                setSuccess('Abonnement mis à jour.');
-            } else {
-                const response = await createSubscription(userFormData);
-                setSubscriptions([response.subscription, ...subscriptions]);
-                setSuccess('Abonnement créé avec succès.');
-            }
-            setUserModalVisible(false);
-        } catch (err) {
-            setError(err.message);
-        } finally {
-            setUserLoading(false);
-        }
+const SubscriptionTypeCard = ({ item, index }) => {
+    const Icon = subscriptionIcons[item.icon] || CalendarDays;
+    const style = {
+        '--card-accent': item.accentColor,
+        '--card-accent-soft': item.accentSoft,
+        '--card-accent-glow': item.accentGlow,
+        animationDelay: `${index * 80}ms`,
+        borderColor: item.accentColor,
     };
 
     return (
-        <div>
-            {/* Header */}
-            <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: '30px',
-                flexWrap: 'wrap',
-                gap: '20px'
-            }}>
-                <div>
-                    <h1 style={{ fontSize: '28px', fontWeight: '700', color: '#1F2937', margin: 0 }}>
-                        {isAdmin ? 'Abonnements plateforme' : 'Mon abonnement'}
-                    </h1>
-                    <p style={{ fontSize: '14px', color: '#6B7280', margin: '8px 0 0' }}>
-                        {isAdmin
-                            ? 'Suivez tous les abonnements de la plateforme avec une vue d\'administration claire.'
-                            : 'Consultez et gérez votre abonnement actif.'}
-                    </p>
-                </div>
-                {isAdmin ? (
-                    <button
-                        onClick={openAddModal}
-                        style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '8px',
-                            padding: '12px 20px',
-                            background: 'linear-gradient(135deg, #F97316, #EA580C)',
-                            color: '#ffffff',
-                            border: 'none',
-                            borderRadius: '10px',
-                            fontSize: '14px',
-                            fontWeight: '600',
-                            textDecoration: 'none',
-                            cursor: 'pointer',
-                            boxShadow: '0 4px 12px rgba(249, 115, 22, 0.3)',
-                            transition: 'all 0.2s ease'
-                        }}
-                        onMouseEnter={(e) => {
-                            e.currentTarget.style.opacity = '0.88';
-                            e.currentTarget.style.transform = 'translateY(-1px)';
-                        }}
-                        onMouseLeave={(e) => {
-                            e.currentTarget.style.opacity = '1';
-                            e.currentTarget.style.transform = 'none';
-                        }}
-                    >
-                        <Plus size={18} /> Ajouter un abonnement
-                    </button>
-                ) : !userSubscription ? (
-                    <Link
-                        to="/request-subscription"
-                        style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '8px',
-                            padding: '12px 20px',
-                            background: 'linear-gradient(135deg, #F97316, #EA580C)',
-                            color: '#ffffff',
-                            border: 'none',
-                            borderRadius: '10px',
-                            fontSize: '14px',
-                            fontWeight: '600',
-                            textDecoration: 'none',
-                            cursor: 'pointer',
-                            boxShadow: '0 4px 12px rgba(249, 115, 22, 0.3)',
-                            transition: 'all 0.2s ease'
-                        }}
-                        onMouseEnter={(e) => {
-                            e.currentTarget.style.opacity = '0.88';
-                            e.currentTarget.style.transform = 'translateY(-1px)';
-                        }}
-                        onMouseLeave={(e) => {
-                            e.currentTarget.style.opacity = '1';
-                            e.currentTarget.style.transform = 'none';
-                        }}
-                    >
-                        <Plus size={18} /> Demander un abonnement
-                    </Link>
-                ) : null}
+        <button type="button" className="subscription-type-card" style={style} onClick={() => item.onSelect?.(item)}>
+            <span className="subscription-type-card-glow" aria-hidden="true" />
+            <div className="subscription-type-top">
+                <span className="subscription-type-icon"><Icon size={22} /></span>
+                {item.badge && <span className="subscription-type-badge">{item.badge}</span>}
             </div>
-
-            {/* Stat Cards for Admin */}
-            {isAdmin && (
-                <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-                    gap: '20px',
-                    marginBottom: '30px'
-                }}>
-                    {[
-                        { label: 'Total abonnements', value: stats.total, icon: 'Package', bgColor: '#EFF6FF', color: '#3B82F6' },
-                        { label: 'Validés', value: stats.validee, icon: 'CheckCircle2', bgColor: '#FFF7ED', color: '#F97316' },
-                        { label: 'Actifs', value: stats.actif, icon: 'CheckCircle2', bgColor: '#ECFDF5', color: '#10B981' },
-                        { label: 'Expirés', value: stats.expire, icon: 'AlertCircle', bgColor: '#FEF2F2', color: '#EF4444' },
-                    ].map((stat) => {
-                        const iconMap = {
-                            Package: <Package size={24} />,
-                            CheckCircle2: <CheckCircle2 size={24} />,
-                            AlertCircle: <AlertCircle size={24} />
-                        };
-                        return (
-                        <div
-                            key={stat.label}
-                            style={{
-                                background: '#ffffff',
-                                borderRadius: '16px',
-                                padding: '24px',
-                                boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
-                                border: '1px solid #F1F5F9'
-                            }}
-                        >
-                            <div style={{
-                                background: stat.bgColor,
-                                borderRadius: '12px',
-                                padding: '10px',
-                                width: '44px',
-                                height: '44px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                color: stat.color,
-                                marginBottom: '16px'
-                            }}>
-                                {iconMap[stat.icon]}
-                            </div>
-                            <p style={{
-                                fontSize: '13px',
-                                color: '#64748B',
-                                margin: '0 0 8px'
-                            }}>
-                                {stat.label}
-                            </p>
-                            <h2 style={{
-                                fontSize: '32px',
-                                fontWeight: 800,
-                                color: '#1E293B',
-                                margin: 0
-                            }}>
-                                {stat.value}
-                            </h2>
-                        </div>
-                    );
-                    })}
+            <div className="subscription-type-body">
+                <div>
+                    <h3>{item.title}</h3>
+                    <p>{item.description}</p>
                 </div>
-            )}
-
-            {/* User Subscription View */}
-            {!isAdmin ? (
-                userActiveSubscriptions.length > 0 ? (
-                    <div style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-                        gap: '18px',
-                        alignItems: 'stretch'
-                    }}>
-                        {userActiveSubscriptions.map((userSubscription) => {
-                            const isFlipped = Boolean(flippedCards[userSubscription.id]);
-                            const displayStatus = getDisplayStatus(userSubscription);
-                            const expirationWarning = getExpirationWarning(userSubscription);
-
-                            return (
-                    <div
-                        key={userSubscription.id}
-                        onClick={() => toggleCardFlip(userSubscription.id)}
-                        style={{
-                        perspective: '1200px',
-                        minHeight: '430px',
-                        cursor: 'pointer'
-                    }}>
-                    <div style={{
-                        position: 'relative',
-                        width: '100%',
-                        minHeight: '430px',
-                        transformStyle: 'preserve-3d',
-                        transition: 'transform 0.65s ease',
-                        transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)'
-                    }}>
-                    <div style={{
-                        background: '#ffffff',
-                        position: 'absolute',
-                        inset: 0,
-                        borderRadius: '12px',
-                        padding: '22px',
-                        minHeight: '430px',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        boxShadow: '0 2px 10px rgba(15,23,42,0.07)',
-                        border: '1px solid #E2E8F0',
-                        backfaceVisibility: 'hidden'
-                    }}>
-                        <div style={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'flex-start',
-                            gap: '16px',
-                            marginBottom: '18px',
-                            paddingBottom: '18px',
-                            borderBottom: '1px solid #F1F5F9'
-                        }}>
-                            <div>
-                                <span style={{
-                                    display: 'inline-block',
-                                    background: '#FFF7ED',
-                                    color: '#F97316',
-                                    border: '1px solid #FDBA74',
-                                    borderRadius: '6px',
-                                    padding: '4px 12px',
-                                    fontSize: '12px',
-                                    fontWeight: 600,
-                                    marginBottom: '12px'
-                                }}>
-                                    Type d'abonnement
-                                </span>
-                                <h2 style={{
-                                    fontSize: '20px',
-                                    fontWeight: 700,
-                                    color: '#1E293B',
-                                    margin: '0 0 8px'
-                                }}>
-                                    {userSubscription.type || userSubscription.titre}
-                                </h2>
-                                <p style={{
-                                    fontSize: '14px',
-                                    color: '#64748B',
-                                    margin: 0
-                                }}>
-                                    {userSubscription.ligne}
-                                </p>
-                            </div>
-                            <div style={{ textAlign: 'right' }}>
-                                <p style={{
-                                    fontSize: '20px',
-                                    fontWeight: 700,
-                                    color: '#1E293B',
-                                    margin: '0 0 8px'
-                                }}>
-                                    {Number(userSubscription.prix || 0).toFixed(2)} TND
-                                </p>
-                                <span style={{
-                                    display: 'inline-block',
-                                    background: displayStatus === 'actif' ? '#F0FDF4' : '#FEF2F2',
-                                    color: displayStatus === 'actif' ? '#16A34A' : '#DC2626',
-                                    border: displayStatus === 'actif' ? '1px solid #86EFAC' : '1px solid #FECACA',
-                                    borderRadius: '20px',
-                                    padding: '4px 12px',
-                                    fontSize: '12px',
-                                    fontWeight: '600'
-                                }}>
-                                    {statusLabels[displayStatus]}
-                                </span>
-                                {expirationWarning && (
-                                    <span style={{
-                                        display: 'inline-block',
-                                        marginTop: '8px',
-                                        background: expirationWarning.background,
-                                        color: expirationWarning.color,
-                                        border: `1px solid ${expirationWarning.border}`,
-                                        borderRadius: '20px',
-                                        padding: '4px 12px',
-                                        fontSize: '12px',
-                                        fontWeight: '700'
-                                    }}>
-                                        {expirationWarning.label}
-                                    </span>
-                                )}
-                                <button
-                                    type="button"
-                                    title="Modifier nom, prenom et contact"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        openUserEditModal(userSubscription);
-                                    }}
-                                    style={{
-                                        display: 'inline-flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        gap: '6px',
-                                        marginTop: '10px',
-                                        padding: '7px 12px',
-                                        background: '#EEF2FF',
-                                        color: '#6366F1',
-                                        border: 'none',
-                                        borderRadius: '8px',
-                                        fontSize: '12px',
-                                        fontWeight: '700',
-                                        cursor: 'pointer',
-                                        transition: 'all 0.2s ease'
-                                    }}
-                                    onMouseEnter={(e) => {
-                                        e.currentTarget.style.background = '#6366F1';
-                                        e.currentTarget.style.color = '#ffffff';
-                                    }}
-                                    onMouseLeave={(e) => {
-                                        e.currentTarget.style.background = '#EEF2FF';
-                                        e.currentTarget.style.color = '#6366F1';
-                                    }}
-                                >
-                                    <Edit2 size={14} />
-                                    Modifier
-                                </button>
-                            </div>
-                        </div>
-                        <div style={{
-                            display: 'grid',
-                            gridTemplateColumns: '1fr 1fr',
-                            gap: '14px',
-                            marginBottom: '14px'
-                        }}>
-                            <div>
-                                <span style={{
-                                    fontSize: '12px',
-                                    color: '#64748B',
-                                    display: 'block',
-                                    marginBottom: '4px'
-                                }}>ID Abonnement</span>
-                                <strong style={{
-                                    fontSize: '14px',
-                                    color: '#1E293B'
-                                }}>{userSubscription.id}</strong>
-                            </div>
-                            <div>
-                                <span style={{
-                                    fontSize: '12px',
-                                    color: '#64748B',
-                                    display: 'block',
-                                    marginBottom: '4px'
-                                }}>Nom</span>
-                                <strong style={{
-                                    fontSize: '14px',
-                                    color: '#1E293B'
-                                }}>{userSubscription.nom || '-'}</strong>
-                            </div>
-                            <div>
-                                <span style={{
-                                    fontSize: '12px',
-                                    color: '#64748B',
-                                    display: 'block',
-                                    marginBottom: '4px'
-                                }}>Prénom</span>
-                                <strong style={{
-                                    fontSize: '14px',
-                                    color: '#1E293B'
-                                }}>{userSubscription.prenom || '-'}</strong>
-                            </div>
-                            <div>
-                                <span style={{
-                                    fontSize: '12px',
-                                    color: '#64748B',
-                                    display: 'block',
-                                    marginBottom: '4px'
-                                }}>Contact</span>
-                                <strong style={{
-                                    fontSize: '14px',
-                                    color: '#1E293B'
-                                }}>{userSubscription.ctt || '-'}</strong>
-                            </div>
-                        </div>
-                        <div style={{
-                            display: 'grid',
-                            gridTemplateColumns: '1fr 1fr',
-                            gap: '14px',
-                            marginTop: 'auto',
-                            paddingTop: '14px',
-                            borderTop: '1px solid #F1F5F9'
-                        }}>
-                            <div>
-                                <span style={{
-                                    fontSize: '12px',
-                                    color: '#64748B',
-                                    display: 'block',
-                                    marginBottom: '4px'
-                                }}>Ligne Départ</span>
-                                <strong style={{
-                                    fontSize: '14px',
-                                    color: '#1E293B'
-                                }}>{userSubscription.ligne}</strong>
-                            </div>
-                            <div>
-                                <span style={{
-                                    fontSize: '12px',
-                                    color: '#64748B',
-                                    display: 'block',
-                                    marginBottom: '4px'
-                                }}>Ligne Arrivée</span>
-                                <strong style={{
-                                    fontSize: '14px',
-                                    color: '#1E293B'
-                                }}>{userSubscription.ligneArrivee || '-'}</strong>
-                            </div>
-                            <div>
-                                <span style={{
-                                    fontSize: '12px',
-                                    color: '#64748B',
-                                    display: 'block',
-                                    marginBottom: '4px'
-                                }}>Date début</span>
-                                <strong style={{
-                                    fontSize: '14px',
-                                    color: '#1E293B'
-                                }}>{formatDisplayDate(userSubscription.dateDebut)}</strong>
-                            </div>
-                            <div>
-                                <span style={{
-                                    fontSize: '12px',
-                                    color: '#64748B',
-                                    display: 'block',
-                                    marginBottom: '4px'
-                                }}>Date fin</span>
-                                <strong style={{
-                                    fontSize: '14px',
-                                    color: '#1E293B'
-                                }}>{formatDisplayDate(userSubscription.dateFin)}</strong>
-                            </div>
-                        </div>
+                <div className="subscription-type-meta">
+                    <div>
+                        <span>Éligibilité</span>
+                        <strong>{item.eligibility || 'Tout public'}</strong>
                     </div>
-
-                    <div style={{
-                        position: 'absolute',
-                        inset: 0,
-                        background: 'linear-gradient(180deg, #ffffff 0%, #FFF7ED 100%)',
-                        borderRadius: '12px',
-                        padding: '24px',
-                        minHeight: '430px',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '16px',
-                        boxShadow: '0 2px 10px rgba(15,23,42,0.07)',
-                        border: '1px solid #FDBA74',
-                        backfaceVisibility: 'hidden',
-                        transform: 'rotateY(180deg)'
-                    }}>
-                        <div style={{
-                            background: '#ffffff',
-                            borderRadius: '10px',
-                            padding: '14px',
-                            border: '1px solid #E2E8F0',
-                            boxShadow: '0 8px 22px rgba(15,23,42,0.08)'
-                        }}>
-                            <QRCodeCanvas
-                                value={buildSubscriptionQrData(userSubscription)}
-                                size={180}
-                                includeMargin
-                            />
-                        </div>
-                        <div style={{ textAlign: 'center' }}>
-                            <h3 style={{
-                                fontSize: '18px',
-                                color: '#1E293B',
-                                fontWeight: 700,
-                                margin: '0 0 6px'
-                            }}>
-                                Carte abonnement SRTB
-                            </h3>
-                            <p style={{
-                                fontSize: '13px',
-                                color: '#64748B',
-                                margin: 0
-                            }}>
-                                Scanner pour afficher les informations
-                            </p>
-                        </div>
-                        <button
-                            type="button"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                toggleCardFlip(userSubscription.id);
-                            }}
-                            style={{
-                                padding: '9px 18px',
-                                background: '#F97316',
-                                color: '#ffffff',
-                                border: 'none',
-                                borderRadius: '8px',
-                                fontSize: '13px',
-                                fontWeight: '600',
-                                cursor: 'pointer',
-                                boxShadow: '0 4px 12px rgba(249,115,22,0.24)'
-                            }}
-                        >
-                            Retour
-                        </button>
+                    <div>
+                        <span>Durée</span>
+                        <strong>{item.duration || '1 mois'}</strong>
                     </div>
-                    </div>
-                    </div>
-                            );
-                        })}
-                    </div>
-                ) : (
-                    <div style={{
-                        background: '#ffffff',
-                        borderRadius: '12px',
-                        padding: '40px',
-                        textAlign: 'center',
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-                        border: '1px solid #E2E8F0'
-                    }}>
-                        <h3 style={{ fontSize: '20px', fontWeight: '600', color: '#1F2937', margin: '0 0 10px' }}>Aucun abonnement actif</h3>
-                        <p style={{ color: '#6B7280', margin: 0, fontSize: '14px' }}>Votre abonnement n'a pas encore été trouvé. Envoyez une demande pour qu'un administrateur l'examine.</p>
-                    </div>
-                )
-            ) : (
-                <>
-                    {/* Search and Filter */}
-                    <div style={{
-                        display: 'flex',
-                        gap: '16px',
-                        marginBottom: '24px',
-                        alignItems: 'center',
-                        flexWrap: 'wrap'
-                    }}>
-                        <div style={{
-                            position: 'relative',
-                            flex: 1,
-                            minWidth: '300px'
-                        }}>
-                            <Filter size={18} style={{
-                                position: 'absolute',
-                                left: '14px',
-                                top: '50%',
-                                transform: 'translateY(-50%)',
-                                color: '#9CA3AF'
-                            }} />
-                            <input
-                                type="search"
-                                placeholder="Rechercher un abonnement..."
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                                style={{
-                                    width: '100%',
-                                    padding: '10px 14px 10px 40px',
-                                    border: '1.5px solid #E2E8F0',
-                                    borderRadius: '10px',
-                                    fontSize: '14px',
-                                    outline: 'none',
-                                    transition: 'all 0.2s ease'
-                                }}
-                                onFocus={(e) => {
-                                    e.currentTarget.style.borderColor = '#F97316';
-                                    e.currentTarget.style.boxShadow = '0 0 0 3px rgba(249, 115, 22, 0.1)';
-                                }}
-                                onBlur={(e) => {
-                                    e.currentTarget.style.borderColor = '#E2E8F0';
-                                    e.currentTarget.style.boxShadow = 'none';
-                                }}
-                            />
-                        </div>
-                        <div style={{ display: 'flex', gap: '8px' }}>
-                            {statusFilters.map((status) => (
-                                <button
-                                    key={status}
-                                    type="button"
-                                    onClick={() => setFilter(status)}
-                                    style={{
-                                        padding: '8px 16px',
-                                        background: filter === status ? '#F97316' : '#f3f4f6',
-                                        color: filter === status ? '#ffffff' : '#374151',
-                                        border: 'none',
-                                        borderRadius: '8px',
-                                        fontSize: '13px',
-                                        fontWeight: '600',
-                                        cursor: 'pointer',
-                                        transition: 'all 0.2s ease'
-                                    }}
-                                    onMouseEnter={(e) => {
-                                        if (filter !== status) {
-                                            e.currentTarget.style.background = '#e5e7eb';
-                                        }
-                                    }}
-                                    onMouseLeave={(e) => {
-                                        if (filter !== status) {
-                                            e.currentTarget.style.background = '#f3f4f6';
-                                        }
-                                    }}
-                                >
-                                    {status === 'all' ? 'Tous' : statusLabels[status]}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Messages */}
-                    {error && (
-                        <div style={{
-                            background: '#FEE2E2',
-                            border: '1px solid #FECACA',
-                            color: '#DC2626',
-                            padding: '12px 16px',
-                            borderRadius: '8px',
-                            marginBottom: '20px',
-                            fontSize: '13px'
-                        }}>
-                            ✕ {error}
-                        </div>
-                    )}
-                    {success && (
-                        <div style={{
-                            background: '#DBEAFE',
-                            border: '1px solid #BFDBFE',
-                            color: '#1E40AF',
-                            padding: '12px 16px',
-                            borderRadius: '8px',
-                            marginBottom: '20px',
-                            fontSize: '13px'
-                        }}>
-                            ✓ {success}
-                        </div>
-                    )}
-
-                    {/* Table */}
-                    <div style={{
-                        background: '#ffffff',
-                        borderRadius: '12px',
-                        border: '1px solid #E2E8F0',
-                        overflow: 'hidden',
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
-                    }}>
-                        <div style={{ overflowX: 'auto' }}>
-                            <table style={{
-                                width: '100%',
-                                borderCollapse: 'collapse',
-                                fontSize: '14px'
-                            }}>
-                                <thead>
-                                    <tr style={{
-                                        background: '#FFF7ED',
-                                        borderBottom: '1px solid #E2E8F0'
-                                    }}>
-                                        <th style={{
-                                            padding: '16px',
-                                            textAlign: 'left',
-                                            fontWeight: '600',
-                                            color: '#F97316'
-                                        }}>Titre</th>
-                                        <th style={{
-                                            padding: '16px',
-                                            textAlign: 'left',
-                                            fontWeight: '600',
-                                            color: '#F97316'
-                                        }}>Type</th>
-                                        <th style={{
-                                            padding: '16px',
-                                            textAlign: 'left',
-                                            fontWeight: '600',
-                                            color: '#F97316'
-                                        }}>Utilisateur</th>
-                                        <th style={{
-                                            padding: '16px',
-                                            textAlign: 'left',
-                                            fontWeight: '600',
-                                            color: '#F97316'
-                                        }}>Dates</th>
-                                        <th style={{
-                                            padding: '16px',
-                                            textAlign: 'left',
-                                            fontWeight: '600',
-                                            color: '#F97316'
-                                        }}>Statut</th>
-                                        <th style={{
-                                            padding: '16px',
-                                            textAlign: 'left',
-                                            fontWeight: '600',
-                                            color: '#F97316'
-                                        }}>Prix</th>
-                                        <th style={{
-                                            padding: '16px',
-                                            textAlign: 'left',
-                                            fontWeight: '600',
-                                            color: '#F97316'
-                                        }}>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {filteredSubscriptions.length === 0 ? (
-                                        <tr>
-                                            <td colSpan="7" style={{
-                                                padding: '40px',
-                                                textAlign: 'center',
-                                                color: '#9CA3AF'
-                                            }}>
-                                                Aucun abonnement trouvé
-                                            </td>
-                                        </tr>
-                                    ) : (
-                                        filteredSubscriptions.map((item) => (
-                                            <tr key={item.id} style={{
-                                                borderBottom: '1px solid #F8FAFC',
-                                                transition: 'background 0.2s ease'
-                                            }}
-                                                onMouseEnter={(e) => e.currentTarget.style.background = '#FFFBF7'}
-                                                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                                            >
-                                                <td style={{ padding: '16px', color: '#1F2937', fontWeight: '500' }}>
-                                                    {item.titre}
-                                                </td>
-                                                <td style={{ padding: '16px', color: '#6B7280' }}>
-                                                    {item.type}
-                                                </td>
-                                                <td style={{ padding: '16px', color: '#6B7280', fontSize: '13px' }}>
-                                                    {item.userPrenom} {item.userNom}
-                                                </td>
-                                                <td style={{ padding: '16px', color: '#6B7280', fontSize: '13px' }}>
-                                                    {formatDisplayDate(item.dateDebut)} → {formatDisplayDate(item.dateFin)}
-                                                </td>
-                                                <td style={{ padding: '16px' }}>
-                                                    <span style={{
-                                                        display: 'inline-block',
-                                                        padding: '4px 12px',
-                                                        borderRadius: '20px',
-                                                        fontSize: '12px',
-                                                        fontWeight: '600',
-                                                        background: getDisplayStatus(item) === 'actif' ? '#F0FDF4' : '#FEF2F2',
-                                                        color: getDisplayStatus(item) === 'actif' ? '#16A34A' : '#DC2626',
-                                                        border: getDisplayStatus(item) === 'actif' ? '1px solid #86EFAC' : '1px solid #FECACA'
-                                                    }}>
-                                                        {statusLabels[getDisplayStatus(item)]}
-                                                    </span>
-                                                </td>
-                                                <td style={{ padding: '16px', color: '#1F2937', fontWeight: '500' }}>
-                                                    {Number(item.prix || 0).toFixed(2)} TND
-                                                </td>
-                                                <td style={{ padding: '16px' }}>
-                                                    <div style={{ display: 'flex', gap: '8px' }}>
-                                                        <button
-                                                            onClick={() => openEditModal(item)}
-                                                            style={{
-                                                                display: 'flex',
-                                                                alignItems: 'center',
-                                                                gap: '6px',
-                                                                padding: '7px 14px',
-                                                                background: '#EEF2FF',
-                                                                color: '#6366F1',
-                                                                border: 'none',
-                                                                borderRadius: '8px',
-                                                                fontSize: '12px',
-                                                                fontWeight: '600',
-                                                                cursor: 'pointer',
-                                                                transition: 'all 0.2s ease'
-                                                            }}
-                                                            onMouseEnter={(e) => {
-                                                                e.currentTarget.style.background = '#6366F1';
-                                                                e.currentTarget.style.color = '#ffffff';
-                                                            }}
-                                                            onMouseLeave={(e) => {
-                                                                e.currentTarget.style.background = '#EEF2FF';
-                                                                e.currentTarget.style.color = '#6366F1';
-                                                            }}
-                                                        >
-                                                            <Edit2 size={14} />
-                                                        </button>
-                                                        <button
-                                                            onClick={() => handleDelete(item)}
-                                                            style={{
-                                                                display: 'flex',
-                                                                alignItems: 'center',
-                                                                gap: '6px',
-                                                                padding: '7px 14px',
-                                                                background: '#FEF2F2',
-                                                                color: '#DC2626',
-                                                                border: 'none',
-                                                                borderRadius: '8px',
-                                                                fontSize: '12px',
-                                                                fontWeight: '600',
-                                                                cursor: 'pointer',
-                                                                transition: 'all 0.2s ease'
-                                                            }}
-                                                            onMouseEnter={(e) => {
-                                                                e.currentTarget.style.background = '#DC2626';
-                                                                e.currentTarget.style.color = '#ffffff';
-                                                            }}
-                                                            onMouseLeave={(e) => {
-                                                                e.currentTarget.style.background = '#FEF2F2';
-                                                                e.currentTarget.style.color = '#DC2626';
-                                                            }}
-                                                        >
-                                                            <Trash2 size={14} />
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </>
-            )}
-
-            {/* Add/Edit Modal */}
-            <Modal
-                visible={modalVisible}
-                title={selectedSubscription ? 'Modifier l\'abonnement' : 'Ajouter un abonnement'}
-                onClose={() => setModalVisible(false)}
-            >
-                <form noValidate onSubmit={handleSaveSubscription} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                        <div>
-                            <label style={{
-                                display: 'block',
-                                fontSize: '13px',
-                                fontWeight: '600',
-                                color: '#374151',
-                                marginBottom: '6px'
-                            }}>Titre</label>
-                            <input
-                                type="text"
-                                value={formData.titre}
-                                onChange={(e) => setFormData({ ...formData, titre: e.target.value })}
-                                required
-                                style={{
-                                    width: '100%',
-                                    padding: '10px 12px',
-                                    border: '1.5px solid #E2E8F0',
-                                    borderRadius: '6px',
-                                    fontSize: '14px',
-                                    outline: 'none',
-                                    transition: 'all 0.2s ease'
-                                }}
-                                onFocus={(e) => {
-                                    e.currentTarget.style.borderColor = '#F97316';
-                                    e.currentTarget.style.boxShadow = '0 0 0 3px rgba(249, 115, 22, 0.1)';
-                                }}
-                                onBlur={(e) => {
-                                    e.currentTarget.style.borderColor = '#E2E8F0';
-                                    e.currentTarget.style.boxShadow = 'none';
-                                }}
-                            />
-                        </div>
-                        <div>
-                            <label style={{
-                                display: 'block',
-                                fontSize: '13px',
-                                fontWeight: '600',
-                                color: '#374151',
-                                marginBottom: '6px'
-                            }}>Type</label>
-                            <select
-                                value={formData.type}
-                                onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                                style={{
-                                    width: '100%',
-                                    padding: '10px 12px',
-                                    border: '1.5px solid #E2E8F0',
-                                    borderRadius: '6px',
-                                    fontSize: '14px',
-                                    outline: 'none',
-                                    transition: 'all 0.2s ease'
-                                }}
-                                onFocus={(e) => {
-                                    e.currentTarget.style.borderColor = '#F97316';
-                                    e.currentTarget.style.boxShadow = '0 0 0 3px rgba(249, 115, 22, 0.1)';
-                                }}
-                                onBlur={(e) => {
-                                    e.currentTarget.style.borderColor = '#E2E8F0';
-                                    e.currentTarget.style.boxShadow = 'none';
-                                }}
-                            >
-                                <option>Mensuel</option>
-                                <option>Annuel</option>
-                                <option>Étudiant</option>
-                                <option>Professionnel</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                        <div>
-                            <label style={{
-                                display: 'block',
-                                fontSize: '13px',
-                                fontWeight: '600',
-                                color: '#374151',
-                                marginBottom: '6px'
-                            }}>Ligne</label>
-                            <input
-                                type="text"
-                                value={formData.ligne}
-                                onChange={(e) => setFormData({ ...formData, ligne: e.target.value })}
-                                required
-                                style={{
-                                    width: '100%',
-                                    padding: '10px 12px',
-                                    border: '1.5px solid #E2E8F0',
-                                    borderRadius: '6px',
-                                    fontSize: '14px',
-                                    outline: 'none',
-                                    transition: 'all 0.2s ease'
-                                }}
-                                onFocus={(e) => {
-                                    e.currentTarget.style.borderColor = '#F97316';
-                                    e.currentTarget.style.boxShadow = '0 0 0 3px rgba(249, 115, 22, 0.1)';
-                                }}
-                                onBlur={(e) => {
-                                    e.currentTarget.style.borderColor = '#E2E8F0';
-                                    e.currentTarget.style.boxShadow = 'none';
-                                }}
-                            />
-                        </div>
-                        <div>
-                            <label style={{
-                                display: 'block',
-                                fontSize: '13px',
-                                fontWeight: '600',
-                                color: '#374151',
-                                marginBottom: '6px'
-                            }}>Prix</label>
-                            <input
-                                type="number"
-                                value={formData.prix}
-                                onChange={(e) => setFormData({ ...formData, prix: Number(e.target.value) })}
-                                required
-                                style={{
-                                    width: '100%',
-                                    padding: '10px 12px',
-                                    border: '1.5px solid #E2E8F0',
-                                    borderRadius: '6px',
-                                    fontSize: '14px',
-                                    outline: 'none',
-                                    transition: 'all 0.2s ease'
-                                }}
-                                onFocus={(e) => {
-                                    e.currentTarget.style.borderColor = '#F97316';
-                                    e.currentTarget.style.boxShadow = '0 0 0 3px rgba(249, 115, 22, 0.1)';
-                                }}
-                                onBlur={(e) => {
-                                    e.currentTarget.style.borderColor = '#E2E8F0';
-                                    e.currentTarget.style.boxShadow = 'none';
-                                }}
-                            />
-                        </div>
-                    </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                        <div>
-                            <label style={{
-                                display: 'block',
-                                fontSize: '13px',
-                                fontWeight: '600',
-                                color: '#374151',
-                                marginBottom: '6px'
-                            }}>Date début</label>
-                            <input
-                                type="date"
-                                value={formData.dateDebut}
-                                onChange={(e) => setFormData({ ...formData, dateDebut: e.target.value })}
-                                required
-                                min={getTodayInputValue()}
-                                max={addDaysToInputDate(formData.dateFin, -1) || undefined}
-                                style={{
-                                    width: '100%',
-                                    padding: '10px 12px',
-                                    border: '1.5px solid #E2E8F0',
-                                    borderRadius: '6px',
-                                    fontSize: '14px',
-                                    outline: 'none',
-                                    transition: 'all 0.2s ease'
-                                }}
-                                onFocus={(e) => {
-                                    e.currentTarget.style.borderColor = '#F97316';
-                                    e.currentTarget.style.boxShadow = '0 0 0 3px rgba(249, 115, 22, 0.1)';
-                                }}
-                                onBlur={(e) => {
-                                    e.currentTarget.style.borderColor = '#E2E8F0';
-                                    e.currentTarget.style.boxShadow = 'none';
-                                }}
-                            />
-                        </div>
-                        <div>
-                            <label style={{
-                                display: 'block',
-                                fontSize: '13px',
-                                fontWeight: '600',
-                                color: '#374151',
-                                marginBottom: '6px'
-                            }}>Date fin</label>
-                            <input
-                                type="date"
-                                value={formData.dateFin}
-                                onChange={(e) => setFormData({ ...formData, dateFin: e.target.value })}
-                                required
-                                min={addDaysToInputDate(formData.dateDebut, 1) || undefined}
-                                style={{
-                                    width: '100%',
-                                    padding: '10px 12px',
-                                    border: '1.5px solid #E2E8F0',
-                                    borderRadius: '6px',
-                                    fontSize: '14px',
-                                    outline: 'none',
-                                    transition: 'all 0.2s ease'
-                                }}
-                                onFocus={(e) => {
-                                    e.currentTarget.style.borderColor = '#F97316';
-                                    e.currentTarget.style.boxShadow = '0 0 0 3px rgba(249, 115, 22, 0.1)';
-                                }}
-                                onBlur={(e) => {
-                                    e.currentTarget.style.borderColor = '#E2E8F0';
-                                    e.currentTarget.style.boxShadow = 'none';
-                                }}
-                            />
-                        </div>
-                    </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                        <div>
-                            <label style={{
-                                display: 'block',
-                                fontSize: '13px',
-                                fontWeight: '600',
-                                color: '#374151',
-                                marginBottom: '6px'
-                            }}>Statut</label>
-                            <select
-                                value={formData.status}
-                                onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                                style={{
-                                    width: '100%',
-                                    padding: '10px 12px',
-                                    border: '1.5px solid #E2E8F0',
-                                    borderRadius: '6px',
-                                    fontSize: '14px',
-                                    outline: 'none',
-                                    transition: 'all 0.2s ease'
-                                }}
-                                onFocus={(e) => {
-                                    e.currentTarget.style.borderColor = '#F97316';
-                                    e.currentTarget.style.boxShadow = '0 0 0 3px rgba(249, 115, 22, 0.1)';
-                                }}
-                                onBlur={(e) => {
-                                    e.currentTarget.style.borderColor = '#E2E8F0';
-                                    e.currentTarget.style.boxShadow = 'none';
-                                }}
-                            >
-                                <option value="actif">Actif</option>
-                                <option value="expire">Expiré</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label style={{
-                                display: 'block',
-                                fontSize: '13px',
-                                fontWeight: '600',
-                                color: '#374151',
-                                marginBottom: '6px'
-                            }}>Nom utilisateur</label>
-                            <input
-                                type="text"
-                                value={formData.userNom}
-                                onChange={(e) => setFormData({ ...formData, userNom: e.target.value })}
-                                style={{
-                                    width: '100%',
-                                    padding: '10px 12px',
-                                    border: '1.5px solid #E2E8F0',
-                                    borderRadius: '6px',
-                                    fontSize: '14px',
-                                    outline: 'none',
-                                    transition: 'all 0.2s ease'
-                                }}
-                                onFocus={(e) => {
-                                    e.currentTarget.style.borderColor = '#F97316';
-                                    e.currentTarget.style.boxShadow = '0 0 0 3px rgba(249, 115, 22, 0.1)';
-                                }}
-                                onBlur={(e) => {
-                                    e.currentTarget.style.borderColor = '#E2E8F0';
-                                    e.currentTarget.style.boxShadow = 'none';
-                                }}
-                            />
-                        </div>
-                    </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                        <div>
-                            <label style={{
-                                display: 'block',
-                                fontSize: '13px',
-                                fontWeight: '600',
-                                color: '#374151',
-                                marginBottom: '6px'
-                            }}>Prénom utilisateur</label>
-                            <input
-                                type="text"
-                                value={formData.userPrenom}
-                                onChange={(e) => setFormData({ ...formData, userPrenom: e.target.value })}
-                                style={{
-                                    width: '100%',
-                                    padding: '10px 12px',
-                                    border: '1.5px solid #E2E8F0',
-                                    borderRadius: '6px',
-                                    fontSize: '14px',
-                                    outline: 'none',
-                                    transition: 'all 0.2s ease'
-                                }}
-                                onFocus={(e) => {
-                                    e.currentTarget.style.borderColor = '#F97316';
-                                    e.currentTarget.style.boxShadow = '0 0 0 3px rgba(249, 115, 22, 0.1)';
-                                }}
-                                onBlur={(e) => {
-                                    e.currentTarget.style.borderColor = '#E2E8F0';
-                                    e.currentTarget.style.boxShadow = 'none';
-                                }}
-                            />
-                        </div>
-                        <div>
-                            <label style={{
-                                display: 'block',
-                                fontSize: '13px',
-                                fontWeight: '600',
-                                color: '#374151',
-                                marginBottom: '6px'
-                            }}>Email utilisateur</label>
-                            <input
-                                type="email"
-                                value={formData.userEmail}
-                                onChange={(e) => setFormData({ ...formData, userEmail: e.target.value })}
-                                style={{
-                                    width: '100%',
-                                    padding: '10px 12px',
-                                    border: '1.5px solid #E2E8F0',
-                                    borderRadius: '6px',
-                                    fontSize: '14px',
-                                    outline: 'none',
-                                    transition: 'all 0.2s ease'
-                                }}
-                                onFocus={(e) => {
-                                    e.currentTarget.style.borderColor = '#F97316';
-                                    e.currentTarget.style.boxShadow = '0 0 0 3px rgba(249, 115, 22, 0.1)';
-                                }}
-                                onBlur={(e) => {
-                                    e.currentTarget.style.borderColor = '#E2E8F0';
-                                    e.currentTarget.style.boxShadow = 'none';
-                                }}
-                            />
-                        </div>
-                    </div>
-                    <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '10px' }}>
-                        <button
-                            type="button"
-                            onClick={() => setModalVisible(false)}
-                            style={{
-                                padding: '10px 20px',
-                                background: '#f3f4f6',
-                                color: '#374151',
-                                border: 'none',
-                                borderRadius: '6px',
-                                fontSize: '14px',
-                                fontWeight: '600',
-                                cursor: 'pointer',
-                                transition: 'all 0.2s ease'
-                            }}
-                            onMouseEnter={(e) => e.currentTarget.style.background = '#e5e7eb'}
-                            onMouseLeave={(e) => e.currentTarget.style.background = '#f3f4f6'}
-                        >
-                            Annuler
-                        </button>
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            style={{
-                                padding: '10px 20px',
-                                background: loading ? '#FDBF8A' : '#F97316',
-                                color: '#ffffff',
-                                border: 'none',
-                                borderRadius: '6px',
-                                fontSize: '14px',
-                                fontWeight: '600',
-                                cursor: loading ? 'not-allowed' : 'pointer',
-                                transition: 'all 0.2s ease'
-                            }}
-                            onMouseEnter={(e) => {
-                                if (!loading) {
-                                    e.currentTarget.style.opacity = '0.88';
-                                }
-                            }}
-                            onMouseLeave={(e) => {
-                                e.currentTarget.style.opacity = '1';
-                            }}
-                        >
-                            {loading ? 'Enregistrement...' : 'Enregistrer'}
-                        </button>
-                    </div>
-                </form>
-            </Modal>
-
-            {/* User Modal */}
-            <Modal
-                visible={userModalVisible}
-                title={userModalMode === 'create' ? 'Demande d abonnement' : 'Modifier mon abonnement'}
-                onClose={() => setUserModalVisible(false)}
-            >
-                <form onSubmit={handleUserSave} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-
-                    {/* EDIT MODE: Non-modifiable fields */}
-                    {userModalMode === 'edit' && (
-                        <>
-                            <div style={{ background: '#F8FAFC', borderRadius: '8px', padding: '12px 16px', border: '1px solid #E2E8F0' }}>
-                                <p style={{ fontSize: '12px', color: '#94A3B8', margin: '0 0 8px', fontWeight: 600 }}>
-                                    INFORMATIONS NON MODIFIABLES
-                                </p>
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '12px' }}>
-                                    <div>
-                                        <span style={{ fontSize: '11px', color: '#6B7280', display: 'block', marginBottom: '2px' }}>ID</span>
-                                        <span style={{ fontSize: '13px', color: '#374151', fontWeight: '600' }}>{userFormData.id}</span>
-                                    </div>
-                                    <div>
-                                        <span style={{ fontSize: '11px', color: '#6B7280', display: 'block', marginBottom: '2px' }}>Type</span>
-                                        <span style={{ fontSize: '13px', color: '#374151', fontWeight: '600' }}>{userFormData.type}</span>
-                                    </div>
-                                    <div>
-                                        <span style={{ fontSize: '11px', color: '#6B7280', display: 'block', marginBottom: '2px' }}>Prix (TND)</span>
-                                        <span style={{ fontSize: '13px', color: '#374151', fontWeight: '600' }}>{userFormData.prix.toFixed(2)}</span>
-                                    </div>
-                                </div>
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '12px', marginTop: '12px' }}>
-                                    <div>
-                                        <span style={{ fontSize: '11px', color: '#6B7280', display: 'block', marginBottom: '2px' }}>Ligne Départ</span>
-                                        <span style={{ fontSize: '13px', color: '#374151', fontWeight: '600' }}>{userFormData.ligne}</span>
-                                    </div>
-                                    <div>
-                                        <span style={{ fontSize: '11px', color: '#6B7280', display: 'block', marginBottom: '2px' }}>Ligne Arrivée</span>
-                                        <span style={{ fontSize: '13px', color: '#374151', fontWeight: '600' }}>{userFormData.ligneArrivee || '-'}</span>
-                                    </div>
-                                    <div>
-                                        <span style={{ fontSize: '11px', color: '#6B7280', display: 'block', marginBottom: '2px' }}>Date début</span>
-                                        <span style={{ fontSize: '13px', color: '#374151', fontWeight: '600' }}>{formatDisplayDate(userFormData.dateDebut)}</span>
-                                    </div>
-                                    <div>
-                                        <span style={{ fontSize: '11px', color: '#6B7280', display: 'block', marginBottom: '2px' }}>Date fin</span>
-                                        <span style={{ fontSize: '13px', color: '#374151', fontWeight: '600' }}>{formatDisplayDate(userFormData.dateFin)}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </>
-                    )}
-
-                    {/* CREATE MODE: All editable fields */}
-                    {userModalMode === 'create' && (
-                        <>
-                            {/* Type */}
-                            <div>
-                                <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#374151', marginBottom: '6px' }}>
-                                    Type d'abonnement
-                                </label>
-                                <select
-                                    value={userFormData.type}
-                                    onChange={(e) => setUserFormData({ ...userFormData, type: e.target.value })}
-                                    style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #E2E8F0', borderRadius: '6px', fontSize: '14px', outline: 'none' }}
-                                    onFocus={(e) => { e.currentTarget.style.borderColor = '#F97316'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(249,115,22,0.1)'; }}
-                                    onBlur={(e) => { e.currentTarget.style.borderColor = '#E2E8F0'; e.currentTarget.style.boxShadow = 'none'; }}
-                                >
-                                    <option>Mensuel</option>
-                                    <option>Annuel</option>
-                                    <option>Étudiant</option>
-                                    <option>Professionnel</option>
-                                </select>
-                            </div>
-
-                            {/* Ligne Départ et Ligne Arrivée */}
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                                <div>
-                                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#374151', marginBottom: '6px' }}>
-                                        Ligne Départ
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={userFormData.ligne}
-                                        onChange={(e) => setUserFormData({ ...userFormData, ligne: e.target.value })}
-                                        required
-                                        style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #E2E8F0', borderRadius: '6px', fontSize: '14px', outline: 'none' }}
-                                        onFocus={(e) => { e.currentTarget.style.borderColor = '#F97316'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(249,115,22,0.1)'; }}
-                                        onBlur={(e) => { e.currentTarget.style.borderColor = '#E2E8F0'; e.currentTarget.style.boxShadow = 'none'; }}
-                                    />
-                                </div>
-                                <div>
-                                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#374151', marginBottom: '6px' }}>
-                                        Ligne Arrivée
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={userFormData.ligneArrivee}
-                                        onChange={(e) => setUserFormData({ ...userFormData, ligneArrivee: e.target.value })}
-                                        style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #E2E8F0', borderRadius: '6px', fontSize: '14px', outline: 'none' }}
-                                        onFocus={(e) => { e.currentTarget.style.borderColor = '#F97316'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(249,115,22,0.1)'; }}
-                                        onBlur={(e) => { e.currentTarget.style.borderColor = '#E2E8F0'; e.currentTarget.style.boxShadow = 'none'; }}
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Prix */}
-                            <div>
-                                <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#374151', marginBottom: '6px' }}>
-                                    Prix (TND)
-                                </label>
-                                <input
-                                    type="number"
-                                    value={userFormData.prix}
-                                    onChange={(e) => setUserFormData({ ...userFormData, prix: Number(e.target.value) })}
-                                    required
-                                    style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #E2E8F0', borderRadius: '6px', fontSize: '14px', outline: 'none' }}
-                                    onFocus={(e) => { e.currentTarget.style.borderColor = '#F97316'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(249,115,22,0.1)'; }}
-                                    onBlur={(e) => { e.currentTarget.style.borderColor = '#E2E8F0'; e.currentTarget.style.boxShadow = 'none'; }}
-                                />
-                            </div>
-
-                            {/* Dates */}
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                                <div>
-                                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#374151', marginBottom: '6px' }}>
-                                        Date début
-                                    </label>
-                                    <input
-                                        type="date"
-                                        value={userFormData.dateDebut}
-                                        onChange={(e) => setUserFormData({ ...userFormData, dateDebut: e.target.value })}
-                                        required
-                                        style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #E2E8F0', borderRadius: '6px', fontSize: '14px', outline: 'none' }}
-                                        onFocus={(e) => { e.currentTarget.style.borderColor = '#F97316'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(249,115,22,0.1)'; }}
-                                        onBlur={(e) => { e.currentTarget.style.borderColor = '#E2E8F0'; e.currentTarget.style.boxShadow = 'none'; }}
-                                    />
-                                </div>
-                                <div>
-                                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#374151', marginBottom: '6px' }}>
-                                        Date fin
-                                    </label>
-                                    <input
-                                        type="date"
-                                        value={userFormData.dateFin}
-                                        onChange={(e) => setUserFormData({ ...userFormData, dateFin: e.target.value })}
-                                        required
-                                        style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #E2E8F0', borderRadius: '6px', fontSize: '14px', outline: 'none' }}
-                                        onFocus={(e) => { e.currentTarget.style.borderColor = '#F97316'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(249,115,22,0.1)'; }}
-                                        onBlur={(e) => { e.currentTarget.style.borderColor = '#E2E8F0'; e.currentTarget.style.boxShadow = 'none'; }}
-                                    />
-                                </div>
-                            </div>
-                        </>
-                    )}
-
-                    {/* ALWAYS EDITABLE: Nom, Prénom, Contact */}
-                    <div style={{ borderTop: '1px solid #E2E8F0', paddingTop: '16px' }}>
-                        <p style={{ fontSize: '12px', color: '#6B7280', margin: '0 0 12px', fontWeight: 600, textTransform: 'uppercase' }}>
-                            INFORMATIONS MODIFIABLES
-                        </p>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                            <div>
-                                <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#374151', marginBottom: '6px' }}>
-                                    Nom
-                                </label>
-                                <input
-                                    type="text"
-                                    value={userFormData.nom}
-                                    onChange={(e) => setUserFormData({ ...userFormData, nom: e.target.value })}
-                                    required
-                                    style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #E2E8F0', borderRadius: '6px', fontSize: '14px', outline: 'none' }}
-                                    onFocus={(e) => { e.currentTarget.style.borderColor = '#F97316'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(249,115,22,0.1)'; }}
-                                    onBlur={(e) => { e.currentTarget.style.borderColor = '#E2E8F0'; e.currentTarget.style.boxShadow = 'none'; }}
-                                />
-                            </div>
-                            <div>
-                                <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#374151', marginBottom: '6px' }}>
-                                    Prénom
-                                </label>
-                                <input
-                                    type="text"
-                                    value={userFormData.prenom}
-                                    onChange={(e) => setUserFormData({ ...userFormData, prenom: e.target.value })}
-                                    required
-                                    style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #E2E8F0', borderRadius: '6px', fontSize: '14px', outline: 'none' }}
-                                    onFocus={(e) => { e.currentTarget.style.borderColor = '#F97316'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(249,115,22,0.1)'; }}
-                                    onBlur={(e) => { e.currentTarget.style.borderColor = '#E2E8F0'; e.currentTarget.style.boxShadow = 'none'; }}
-                                />
-                            </div>
-                        </div>
-                        <div style={{ marginTop: '12px' }}>
-                            <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#374151', marginBottom: '6px' }}>
-                                Contact (CTT)
-                            </label>
-                            <input
-                                type="text"
-                                value={userFormData.ctt}
-                                onChange={(e) => setUserFormData({ ...userFormData, ctt: e.target.value })}
-                                required
-                                style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #E2E8F0', borderRadius: '6px', fontSize: '14px', outline: 'none' }}
-                                onFocus={(e) => { e.currentTarget.style.borderColor = '#F97316'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(249,115,22,0.1)'; }}
-                                onBlur={(e) => { e.currentTarget.style.borderColor = '#E2E8F0'; e.currentTarget.style.boxShadow = 'none'; }}
-                            />
-                        </div>
-                    </div>
-
-                    {/* Error */}
-                    {error && (
-                        <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', color: '#B91C1C', fontSize: '13px', borderRadius: '8px', padding: '10px 14px' }}>
-                            {error}
-                        </div>
-                    )}
-
-                    {/* Buttons */}
-                    <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '6px' }}>
-                        <button
-                            type="button"
-                            onClick={() => setUserModalVisible(false)}
-                            style={{ padding: '10px 20px', background: '#f3f4f6', color: '#374151', border: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: '600', cursor: 'pointer' }}
-                            onMouseEnter={(e) => e.currentTarget.style.background = '#e5e7eb'}
-                            onMouseLeave={(e) => e.currentTarget.style.background = '#f3f4f6'}
-                        >
-                            Annuler
-                        </button>
-                        <button
-                            type="submit"
-                            disabled={userLoading}
-                            style={{
-                                padding: '10px 20px',
-                                background: userLoading ? '#FDBF8A' : '#F97316',
-                                color: '#ffffff',
-                                border: 'none',
-                                borderRadius: '6px',
-                                fontSize: '14px',
-                                fontWeight: '600',
-                                cursor: userLoading ? 'not-allowed' : 'pointer'
-                            }}
-                            onMouseEnter={(e) => { if (!userLoading) e.currentTarget.style.opacity = '0.88'; }}
-                            onMouseLeave={(e) => { e.currentTarget.style.opacity = '1'; }}
-                        >
-                            {userLoading ? 'Enregistrement...' : userModalMode === 'create' ? 'Envoyer' : 'Sauvegarder'}
-                        </button>
-                    </div>
-                </form>
-            </Modal>
-        </div>
+                </div>
+            </div>
+            <div className="subscription-type-footer">
+                <div className="subscription-type-price">
+                    <span>{item.priceNote || 'Tarif'}</span>
+                    <strong>{item.price || '15 DT'}</strong>
+                </div>
+                <span className="subscription-type-link">
+                    Voir les détails
+                    <ArrowUpRight size={16} />
+                </span>
+            </div>
+        </button>
     );
 };
+
+export const SubscriptionTypeSection = ({ types = subscriptionCatalogFallback }) => {
+    const [selectedType, setSelectedType] = useState(null);
+    const cards = normalizeSubscriptionTypes(types).map((item) => ({ ...item, onSelect: setSelectedType }));
+
+    return (
+        <>
+            <section id="types-abonnement" className="subscription-types-section">
+                <div className="subscription-types-shell">
+                    <div className="subscription-types-grid">
+                        {cards.map((item, index) => <SubscriptionTypeCard key={item.id || index} item={item} index={index} />)}
+                    </div>
+                </div>
+            </section>
+
+            <Modal
+                visible={Boolean(selectedType)}
+                title={selectedType?.title || 'Détail'}
+                onClose={() => setSelectedType(null)}
+                actions={
+                    <>
+                        <button type="button" className="btn-secondary" onClick={() => setSelectedType(null)}>Fermer</button>
+                        <button type="button" className="btn-primary" onClick={() => setSelectedType(null)}>Choisir cette formule</button>
+                    </>
+                }
+            >
+                {selectedType && (
+                    <div className="subscription-detail-panel">
+                        <div className="subscription-detail-header">
+                            <span className="subscription-detail-icon" style={{ background: selectedType.accentSoft, color: selectedType.color }}>
+                                {(() => {
+                                    const Icon = subscriptionIcons[selectedType.icon] || CalendarDays;
+                                    return <Icon size={24} />;
+                                })()}
+                            </span>
+                            <div>
+                                <span className="subscription-detail-badge" style={{ background: selectedType.accentSoft, color: selectedType.color }}>{selectedType.badge}</span>
+                                <h3>{selectedType.title}</h3>
+                            </div>
+                        </div>
+
+                        <p className="subscription-detail-description">{selectedType.description}</p>
+
+                        <div className="subscription-detail-grid">
+                            <div>
+                                <span>Eligibilité</span>
+                                <strong>{selectedType.eligibility}</strong>
+                            </div>
+                            <div>
+                                <span>Durée</span>
+                                <strong>{selectedType.duration}</strong>
+                            </div>
+                            <div>
+                                <span>Prix</span>
+                                <strong>{selectedType.price}</strong>
+                            </div>
+                            <div>
+                                <span>Catégorie</span>
+                                <strong>{selectedType.badge}</strong>
+                            </div>
+                        </div>
+
+                        <div className="subscription-detail-benefits">
+                            <h4>Avantages inclus</h4>
+                            <ul>
+                                {selectedType.benefits?.map((benefit) => <li key={benefit}>{benefit}</li>)}
+                            </ul>
+                        </div>
+                    </div>
+                )}
+            </Modal>
+        </>
+    );
+};
+
+const Subscriptions = () => {
+    const user = getCurrentUser(); const isAdmin = user?.role === 'admin';
+    const [items, setItems] = useState([]); const [search, setSearch] = useState(''); const [filter, setFilter] = useState('all'); const [loading, setLoading] = useState(true); const [error, setError] = useState(''); const [message, setMessage] = useState(''); const [qrItem, setQrItem] = useState(null); const [editItem, setEditItem] = useState(null);
+    useEffect(() => { getSubscriptions().then((result) => setItems(result.subscriptions || [])).catch((err) => setError(err.message || 'Impossible de charger les abonnements.')).finally(() => setLoading(false)); }, []);
+    const filtered = useMemo(() => items.filter((item) => { const text = `${item.titre} ${item.type} ${item.ligne} ${item.userNom} ${item.userPrenom}`.toLowerCase(); return text.includes(search.toLowerCase()) && (filter === 'all' || normalizedStatus(item) === filter); }), [items, search, filter]);
+    const current = items.find((item) => normalizedStatus(item) === 'actif');
+    const stats = { total: items.length, active: items.filter((item) => normalizedStatus(item) === 'actif').length, pending: items.filter((item) => ['en_attente', 'pending'].includes(item.status)).length, expired: items.filter((item) => normalizedStatus(item) === 'expire').length };
+    const remove = async (item) => { if (!window.confirm('Supprimer cet abonnement ?')) return; try { await deleteSubscription(item.id); setItems((currentItems) => currentItems.filter((entry) => entry.id !== item.id)); setMessage('Abonnement supprimé.'); } catch (err) { setError(err.message || 'Suppression impossible.'); } };
+    const saveEdit = async (event) => { event.preventDefault(); try { const form = new FormData(event.currentTarget); const result = await updateSubscription(editItem.id, { nom: form.get('nom'), prenom: form.get('prenom'), ctt: form.get('ctt') }); setItems((currentItems) => currentItems.map((item) => item.id === editItem.id ? result.subscription : item)); setEditItem(null); setMessage('Abonnement mis à jour.'); } catch (err) { setError(err.message || 'Mise à jour impossible.'); } };
+
+    if (!isAdmin) return <UserSubscriptions user={user} current={current} items={items} loading={loading} error={error} qrItem={qrItem} setQrItem={setQrItem} />;
+    return <div className="page-shell"><PageHeader eyebrow="Administration" title="Abonnements" subtitle="Supervisez les abonnements actifs, expirés et en attente." />{error && <div className="error-message">{error}</div>}{message && <div className="success-message">{message}</div>}<div className="admin-stats"><StatCard icon={<Layers3 size={17} />} label="Total abonnements" value={stats.total} hint="Portefeuille global" /><StatCard icon={<CheckCircle2 size={17} />} label="Actifs" value={stats.active} hint="En circulation" tone="teal" /><StatCard icon={<Clock3 size={17} />} label="En attente" value={stats.pending} hint="À examiner" tone="amber" /><StatCard icon={<CalendarDays size={17} />} label="Expirés" value={stats.expired} hint="À renouveler" tone="slate" /></div><FilterBar search={search} onSearch={setSearch} placeholder="Rechercher un abonné ou une ligne..."><div className="filter-select-wrap"><select value={filter} onChange={(event) => setFilter(event.target.value)} aria-label="Filtrer les abonnements"><option value="all">Tous</option><option value="actif">Actifs</option><option value="en_attente">En attente</option><option value="expire">Expirés</option></select></div></FilterBar><div className="surface admin-table-wrap">{loading ? <div className="premium-skeleton" /> : <table className="premium-table"><thead><tr><th>Abonné</th><th>Type</th><th>Ligne</th><th>Période</th><th>Prix</th><th>Statut</th><th /></tr></thead><tbody>{filtered.map((item) => <tr key={item.id}><td><strong>{item.userPrenom} {item.userNom}</strong></td><td>{item.type}</td><td>{item.ligne}</td><td>{dateLabel(item.dateDebut)} → {dateLabel(item.dateFin)}</td><td>{Number(item.prix || 0).toLocaleString('fr-FR')} TND</td><td><StatusBadge status={normalizedStatus(item)} /></td><td><div className="table-actions"><button className="icon-button" type="button" onClick={() => setEditItem(item)} aria-label="Modifier"><Edit3 size={15} /></button><button className="icon-button" type="button" onClick={() => remove(item)} aria-label="Supprimer"><Trash2 size={15} /></button></div></td></tr>)}</tbody></table>}</div><Modal visible={Boolean(editItem)} title="Modifier le contact" onClose={() => setEditItem(null)} actions={<><button className="btn-secondary" type="button" onClick={() => setEditItem(null)}>Annuler</button><button className="btn-primary" type="submit" form="subscription-edit">Enregistrer</button></>}><form id="subscription-edit" className="modal-form" onSubmit={saveEdit}><label className="premium-field"><span>Prénom</span><input name="prenom" defaultValue={editItem?.userPrenom || ''} required /></label><label className="premium-field"><span>Nom</span><input name="nom" defaultValue={editItem?.userNom || ''} required /></label><label className="premium-field"><span>Contact</span><input name="ctt" defaultValue={editItem?.ctt || editItem?.userEmail || ''} required /></label></form></Modal></div>;
+};
+
+const UserSubscriptions = ({ user, current, items, loading, error, qrItem, setQrItem }) => {
+    const active = current ? validity(current) : null;
+    const [showQr, setShowQr] = useState(false);
+    const qrValue = current ? JSON.stringify({
+        id: current.id,
+        type: current.type,
+        ligne: current.ligne,
+        titre: current.titre || current.type,
+        user: `${current.userPrenom || user?.prenom || ''} ${current.userNom || user?.nom || ''}`.trim(),
+        dateFin: current.dateFin,
+    }) : '';
+
+    return <div className="page-shell"><PageHeader eyebrow="Espace passager" title="Mon abonnement" subtitle="Consultez votre abonnement actuel et suivez sa validité." actions={<Link className="btn-primary" to="/request-subscription"><Plus size={16} /> Demander un abonnement</Link>} />{error && <div className="error-message">{error}</div>}{loading ? <div className="subscription-loading"><div className="premium-skeleton" /></div> : current ? <><section className={`digital-pass ${showQr ? 'is-flipped' : ''}`} onClick={() => setShowQr((value) => !value)} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); setShowQr((value) => !value); } }} role="button" tabIndex={0} aria-label="Afficher ou masquer le code QR de l'abonnement"><div className="digital-pass-inner"><div className="digital-pass-face digital-pass-front"><div className="digital-pass-top"><div><span className="pass-brand">SRTB · PASSAGER</span><h2>{current.titre || current.type}</h2><p>{current.type} · {current.userPrenom || user?.prenom} {current.userNom || user?.nom}</p></div><StatusBadge status="actif" /></div><div className="pass-route"><div><span>Ligne</span><strong>{current.ligne}</strong><small>{current.ligne} · {current.ligneArrivee || 'Réseau SRTB'}</small></div><ArrowRight size={25} /><div><span>Validité</span><strong>{dateLabel(current.dateFin)}</strong><small>{dateLabel(current.dateDebut)} — {dateLabel(current.dateFin)}</small></div></div><div className="pass-bottom"><div><span>Tarif</span><strong>{Number(current.prix || 0).toLocaleString('fr-FR')} TND</strong></div><div><span>Validité restante</span><strong>{active.days} jours</strong></div><div className="pass-qr-hint"><QrCode size={17} /> Cliquez pour afficher le QR code</div></div><div className="pass-click-tip"><span className="pass-click-tip-icon"><QrCode size={12} /></span>Cliquez pour afficher le QR</div></div><div className="digital-pass-face digital-pass-back"><div className="qr-panel"><span className="pass-brand">SRTB · QR CODE</span><div className="qr-code-wrap"><QRCodeCanvas value={qrValue} size={160} bgColor="#ffffff" fgColor="#0f4c81" /></div><h3>{current.titre || current.type}</h3><p>{current.type} · {current.ligne}</p><small>{current.userPrenom || user?.prenom} {current.userNom || user?.nom}</small></div></div></div></section><section className="validity-card surface"><div className="validity-heading"><div><p className="eyebrow">Validité de l’abonnement</p><h2>{active.percent}% utilisé</h2></div><strong>{active.days} jours restants</strong></div><div className="validity-track"><span style={{ width: `${active.percent}%` }} /></div></section><div className="subscription-info-grid">{[['Type d’abonnement', current.type], ['Ligne', current.ligne], ['Agence', 'Agence Tunis Centre'], ['Prix', `${Number(current.prix || 0).toLocaleString('fr-FR')} TND`], ['Date de début', dateLabel(current.dateDebut)], ['Date d’expiration', dateLabel(current.dateFin)]].map(([label, value]) => <div className="info-tile surface" key={label}><span>{label}</span><strong>{value}</strong></div>)}</div><div className="quick-actions"><Link className="btn-primary" to="/request-subscription"><Plus size={15} /> Demander un nouvel abonnement</Link><Link className="btn-secondary" to="/history"><CalendarDays size={15} /> Voir mon historique</Link></div></> : <EmptyState icon={<Layers3 size={24} />} title="Vous n’avez aucun abonnement actif" description="Commencez une demande pour bénéficier d’un abonnement de transport." action={<Link className="btn-primary" to="/request-subscription">Demander un abonnement</Link>} />}<Modal visible={Boolean(qrItem)} title="Votre pass SRTB" onClose={() => setQrItem(null)}><div className="qr-modal"><QRCodeCanvas value={JSON.stringify({ id: qrItem?.id, user: `${user?.prenom} ${user?.nom}`, line: qrItem?.ligne, validUntil: qrItem?.dateFin })} size={190} /><p>Présentez ce code lors du contrôle.</p><strong>{qrItem?.id}</strong></div></Modal></div>; };
 
 export default Subscriptions;

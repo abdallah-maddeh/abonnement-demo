@@ -54,9 +54,126 @@ const defaultData = {
         { id_ligne: 5, label: 'Ligne 5', depart: 'Kairouan', arrivee: 'Sfax' },
     ],
     typesAbonnement: [
-        { id: 'Mensuel', label: 'Mensuel', duration: 'month', basePrice: 1200 },
-        { id: 'Trimestriel', label: 'Trimestriel', duration: 'month', basePrice: 3400 },
-        { id: 'Annuel', label: 'Annuel', duration: 'year', basePrice: 12000 },
+        {
+            id: 'Scolaire',
+            label: 'Abonnement Scolaire',
+            duration: 'Mensualité scolaire',
+            basePrice: 850,
+            priceLabel: 'Tarif scolaire',
+            eligibility: 'Élèves du secondaire',
+            description: 'Une solution adaptée aux déplacements quotidiens des élèves.',
+            benefits: ['Trajets domicile-établissement', 'Tarifs préférentiels', 'Suivi simple et sécurisé'],
+            badge: 'POPULAIRE',
+            color: '#3b82f6',
+            accentSoft: 'rgba(59, 130, 246, 0.16)',
+            accentGlow: 'rgba(59, 130, 246, 0.26)',
+            icon: 'GraduationCap',
+        },
+        {
+            id: 'Universitaire',
+            label: 'Abonnement Universitaire',
+            duration: 'Mensualité étudiant',
+            basePrice: 950,
+            priceLabel: 'Tarif étudiant',
+            eligibility: 'Étudiants universitaires',
+            description: 'Une formule pensée pour les trajets réguliers entre domicile, campus et résidence.',
+            benefits: ['Accès rapide aux lignes majeures', 'Tarif étudiant', 'Gestion simplifiée'],
+            badge: 'ÉTUDIANT',
+            color: '#8b5cf6',
+            accentSoft: 'rgba(139, 92, 246, 0.16)',
+            accentGlow: 'rgba(139, 92, 246, 0.24)',
+            icon: 'School',
+        },
+        {
+            id: 'Professionnel',
+            label: 'Abonnement Professionnel',
+            duration: 'Mensualité pro',
+            basePrice: 1450,
+            priceLabel: 'Tarif professionnel',
+            eligibility: 'Salariés et travailleurs',
+            description: 'Une formule fiable pour les déplacements professionnels et quotidiens en toute sérénité.',
+            benefits: ['Trajets domicile-travail', 'Rythme de validité pratique', 'Assistance prioritaire'],
+            badge: 'PRO',
+            color: '#10b981',
+            accentSoft: 'rgba(16, 185, 129, 0.16)',
+            accentGlow: 'rgba(16, 185, 129, 0.22)',
+            icon: 'BriefcaseBusiness',
+        },
+        {
+            id: 'Mensuel',
+            label: 'Abonnement Mensuel',
+            duration: '1 mois',
+            basePrice: 1200,
+            priceLabel: 'Tarif mensuel',
+            eligibility: 'Tous passagers',
+            description: 'Le format le plus simple pour rester mobile, sans engagement sur le long terme.',
+            benefits: ['Flexibilité maximale', 'Paiement mensuel simple', 'Disponibilité immédiate'],
+            badge: 'FLEXIBLE',
+            color: '#06b6d4',
+            accentSoft: 'rgba(6, 182, 212, 0.14)',
+            accentGlow: 'rgba(6, 182, 212, 0.24)',
+            icon: 'CalendarDays',
+        },
+        {
+            id: 'Trimestriel',
+            label: 'Abonnement Trimestriel',
+            duration: '3 mois',
+            basePrice: 3400,
+            priceLabel: 'Tarif trimestriel',
+            eligibility: 'Tous passagers',
+            description: 'Un bon équilibre entre flexibilité et économie pour les déplacements réguliers.',
+            benefits: ['Économie sur 3 mois', 'Mieux adapté aux habitudes', 'Régularité assurée'],
+            badge: 'ÉCONOMIQUE',
+            color: '#f59e0b',
+            accentSoft: 'rgba(245, 158, 11, 0.16)',
+            accentGlow: 'rgba(245, 158, 11, 0.24)',
+            icon: 'CalendarRange',
+        },
+        {
+            id: 'Annuel',
+            label: 'Abonnement Annuel',
+            duration: '12 mois',
+            basePrice: 12000,
+            priceLabel: 'Tarif annuel',
+            eligibility: 'Tous passagers',
+            description: 'La formule premium pour les voyageurs réguliers qui souhaitent une mobilité durable.',
+            benefits: ['Tarif annuel optimisé', 'Réseau complet', 'Priorité d’assistance'],
+            badge: 'MEILLEUR PLAN',
+            color: '#6366f1',
+            accentSoft: 'rgba(99, 102, 241, 0.16)',
+            accentGlow: 'rgba(99, 102, 241, 0.24)',
+            icon: 'CalendarCheck',
+        },
+        {
+            id: 'VIP',
+            label: 'Abonnement VIP',
+            duration: 'Annuel premium',
+            basePrice: 18500,
+            priceLabel: 'Tarif premium',
+            eligibility: 'Voyageurs premium',
+            description: 'Une formule exclusive destinée aux voyageurs recherchant une expérience de transport privilégiée.',
+            benefits: ['Accès prioritaire', 'Service premium', 'Expérience haut de gamme'],
+            badge: 'EXCLUSIF',
+            color: '#d4a85f',
+            accentSoft: 'rgba(212, 168, 95, 0.16)',
+            accentGlow: 'rgba(212, 168, 95, 0.24)',
+            icon: 'Crown',
+        },
+        {
+            id: 'Personnel',
+            label: 'Abonnement Personnel SRTB',
+            duration: 'Selon la politique interne',
+            basePrice: 0,
+            priceLabel: 'Tarif personnel',
+            eligibility: 'Personnel SRTB',
+            description: 'Une formule dédiée aux agents et employés de la SRTB pour leurs déplacements professionnels et quotidiens.',
+            benefits: ['Déplacements internes facilités', 'Politiques internes appliquées', 'Accès réservé au personnel'],
+            badge: 'PERSONNEL SRTB',
+            color: '#1d4ed8',
+            accentSoft: 'rgba(29, 78, 216, 0.16)',
+            accentGlow: 'rgba(29, 78, 216, 0.24)',
+            icon: 'Building2',
+        },
     ],
     abonnements: [
         {
@@ -137,18 +254,64 @@ const defaultData = {
     ],
 };
 
+const extraDemoUsers = [
+    ['Ahmed', 'Ben Salah', 'ahmed.bensalah@example.com', '15/01/2026'],
+    ['Sarra', 'Trabelsi', 'sarra.trabelsi@example.com', '21/02/2026'],
+    ['Mohamed', 'Jlassi', 'mohamed.jlassi@example.com', '03/03/2026'],
+    ['Nour', 'Mansour', 'nour.mansour@example.com', '12/03/2026'],
+    ['Yasmine', 'Gharbi', 'yasmine.gharbi@example.com', '18/03/2026'],
+    ['Houssem', 'Khelifi', 'houssem.khelifi@example.com', '26/03/2026'],
+    ['Meriem', 'Chaabane', 'meriem.chaabane@example.com', '02/04/2026'],
+];
+
+const ensureDemoDensity = (data) => {
+    const existingEmails = new Set(data.utilisateurs.map((user) => user.email));
+    extraDemoUsers.forEach(([prenom, nom, email, dateCreation]) => {
+        if (!existingEmails.has(email)) {
+            data.utilisateurs.push({ id: generateId(), prenom, nom, email, role: 'utilisateur', actif: true, dateCreation });
+        }
+    });
+
+    const demoSubscriptions = [
+        ['Ahmed', 'Ben Salah', 'ahmed.bensalah@example.com', 'Abonnement Étudiant', 'Mensuel', 'Ligne 1', 1200, 'actif', '2026-09-01', '2026-10-01'],
+        ['Sarra', 'Trabelsi', 'sarra.trabelsi@example.com', 'Abonnement Standard', 'Mensuel', 'Ligne 2', 1200, 'actif', '2026-08-15', '2026-09-15'],
+        ['Mohamed', 'Jlassi', 'mohamed.jlassi@example.com', 'Abonnement Étudiant', 'Mensuel', 'Ligne 3', 1200, 'expire', '2026-07-01', '2026-08-01'],
+        ['Nour', 'Mansour', 'nour.mansour@example.com', 'Abonnement Professionnel', 'Trimestriel', 'Ligne 4', 3400, 'validee', '2026-09-05', '2026-12-05'],
+        ['Yasmine', 'Gharbi', 'yasmine.gharbi@example.com', 'Demande Étudiant', 'Mensuel', 'Ligne 5', 1200, 'en_attente', '2026-09-10', '2026-10-10'],
+    ];
+    const subscriptionEmails = new Set(data.abonnements.map((subscription) => subscription.userEmail));
+    demoSubscriptions.forEach(([userPrenom, userNom, userEmail, titre, type, ligne, prix, status, dateDebut, dateFin]) => {
+        if (!subscriptionEmails.has(userEmail)) data.abonnements.push({ id: generateId(), userPrenom, userNom, userEmail, ctt: userEmail, titre, type, ligne, prix, status, dateDebut, dateFin });
+    });
+    const aliSubscription = data.abonnements.find((subscription) => subscription.userEmail === 'ali.utilisateur@demo.com');
+    if (aliSubscription) {
+        aliSubscription.status = 'actif';
+        aliSubscription.titre = 'Abonnement Standard';
+        aliSubscription.type = 'Mensuel';
+        aliSubscription.ligne = 'Ligne 4';
+        aliSubscription.ligneArrivee = 'Tunis';
+        aliSubscription.prix = 1200;
+        aliSubscription.dateDebut = '2026-09-01';
+        aliSubscription.dateFin = '2026-09-30';
+    }
+    return data;
+};
+
 const loadDemoData = () => {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
         try {
-            return JSON.parse(stored);
+            const data = ensureDemoDensity(JSON.parse(stored));
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+            return data;
         } catch (err) {
             console.warn('Données de démonstration corrompues, réinitialisation.', err);
         }
     }
 
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(defaultData));
-    return { ...defaultData };
+    const data = ensureDemoDensity({ ...defaultData, utilisateurs: [...defaultData.utilisateurs], abonnements: [...defaultData.abonnements] });
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    return data;
 };
 
 const saveDemoData = (data) => {
@@ -181,15 +344,21 @@ const normalizeRole = (role) => {
 
 export const login = async (email, password, selectedRole = 'user') => {
     const roleKey = selectedRole === 'admin' ? 'admin' : 'user';
-    const user = {
-        id: generateId(),
-        prenom: roleKey === 'admin' ? 'Admin' : 'Demo',
-        nom: roleKey === 'admin' ? 'Démonstration' : 'Utilisateur',
-        email,
-        role: roleKey,
-        actif: true,
-        dateCreation: formatDate(todayIso()),
-    };
+    const data = loadDemoData();
+    const requestedUser = data.utilisateurs.find((item) => item.email.toLowerCase() === String(email || '').trim().toLowerCase() && (roleKey === 'admin' ? item.role === 'admin' : item.role !== 'admin'));
+    const fallbackUser = data.utilisateurs.find((item) => roleKey === 'admin' ? item.role === 'admin' : item.role !== 'admin');
+    const demoUser = requestedUser || fallbackUser;
+    const user = demoUser
+        ? { ...demoUser, role: roleKey, email: demoUser.email }
+        : {
+              id: generateId(),
+              prenom: roleKey === 'admin' ? 'Admin' : 'Ahmed',
+              nom: roleKey === 'admin' ? 'SRTB' : 'Ben Salah',
+              email: roleKey === 'admin' ? email : 'ahmed.bensalah@example.com',
+              role: roleKey,
+              actif: true,
+              dateCreation: formatDate(todayIso()),
+          };
 
     saveAuth({ isAuthenticated: true, role: roleKey, user });
     return Promise.resolve({ user: getCurrentUser(), token: 'demo-token' });
@@ -247,7 +416,7 @@ export const getCurrentUser = () => {
 
 export const getDefaultAuthenticatedPath = () => {
     const auth = loadAuth();
-    return auth?.role === 'admin' ? '/dashboard' : '/subscriptions';
+    return auth?.role === 'admin' ? '/dashboard' : '/subscription-types';
 };
 
 export const isAuthenticated = () => {
@@ -360,7 +529,11 @@ export const updateUserStatus = async (id, actif) => {
 
 export const getSubscriptions = async () => {
     const data = loadDemoData();
-    return Promise.resolve({ subscriptions: data.abonnements });
+    const currentUser = getCurrentUser();
+    const subscriptions = currentUser?.role === 'admin'
+        ? data.abonnements
+        : data.abonnements.filter((item) => item.userEmail === currentUser?.email);
+    return Promise.resolve({ subscriptions });
 };
 
 export const getSubscription = async (id) => {
@@ -385,9 +558,22 @@ export const getSubscriptionTypes = async () => {
 export const getSubscriptionPrice = async (type, lineId) => {
     const data = loadDemoData();
     const selectedType = data.typesAbonnement.find((item) => item.id === type);
-    const basePrice = selectedType?.basePrice || 1200;
-    const price = basePrice + ((Number(lineId) || 1) - 1) * 80;
-    return Promise.resolve({ prix: price });
+    const durationMonths = selectedType?.id === 'Annuel' || selectedType?.duration === '12 mois' ? 12
+        : selectedType?.id === 'Trimestriel' || selectedType?.duration === '3 mois' ? 3
+        : selectedType?.id === 'VIP' ? 12
+        : selectedType?.id === 'Personnel' ? 1
+        : 1;
+    const basePrice = Number(selectedType?.basePrice || 1200);
+    const durationDiscount = durationMonths >= 12 ? 0.96 : durationMonths >= 3 ? 0.94 : 1;
+    const categoryRate = 1 + ((Number(lineId) || 1) - 1) * 0.03;
+    const price = Math.round(basePrice * durationDiscount * categoryRate);
+    return Promise.resolve({
+        prix: price,
+        tarifMensuel: basePrice,
+        dureeMois: durationMonths,
+        remiseDuree: durationDiscount,
+        coefficientCategorie: categoryRate,
+    });
 };
 
 export const createSubscription = async (subscription) => {
@@ -400,8 +586,8 @@ export const createSubscription = async (subscription) => {
         ligne: subscription.ligne || subscription.ligne_depart || 'Ligne 1',
         ligneArrivee: subscription.ligneArrivee || subscription.ligne_arrivee || '',
         prix: Number(subscription.prix) || 1200,
-        dateDebut: subscription.dateDebut || formatDate(todayIso()),
-        dateFin: subscription.dateFin || formatDate(new Date(Date.now() + 30 * 86400000)),
+        dateDebut: subscription.dateDebut || subscription.date_debut || formatDate(todayIso()),
+        dateFin: subscription.dateFin || subscription.date_fin || formatDate(new Date(Date.now() + 30 * 86400000)),
         status: subscription.status || 'en_attente',
         userPrenom: subscription.userPrenom || subscription.prenom || currentUser?.prenom || 'Demo',
         userNom: subscription.userNom || subscription.nom || currentUser?.nom || 'Utilisateur',
@@ -449,7 +635,7 @@ export const createSubscriptionRequest = async (request) => {
 export const getSubscriptionRequests = async () => {
     const data = loadDemoData();
     const requests = data.abonnements.filter((subscription) => (
-        subscription.status === 'en_attente' || subscription.status === 'pending'
+        ['en_attente', 'pending', 'actif', 'validee', 'approved', 'refusee', 'rejected'].includes(subscription.status)
     ));
     return Promise.resolve({ requests });
 };

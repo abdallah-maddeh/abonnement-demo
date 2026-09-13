@@ -12,6 +12,7 @@ import Dashboard from './pages/Dashboard';
 import Unauthorized from './pages/Unauthorized';
 import Users from './pages/Users';
 import Subscriptions from './pages/Subscriptions';
+import SubscriptionTypes from './pages/SubscriptionTypes';
 import RequestSubscription from './pages/RequestSubscription';
 import SubscriptionRequests from './pages/SubscriptionRequests';
 import SubscriptionHistory from './pages/SubscriptionHistory';
@@ -94,6 +95,16 @@ function App() {
                             <ProtectedRoute>
                                 <AppLayout>
                                     <Subscriptions />
+                                </AppLayout>
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/subscription-types"
+                        element={
+                            <ProtectedRoute>
+                                <AppLayout>
+                                    <SubscriptionTypes />
                                 </AppLayout>
                             </ProtectedRoute>
                         }
