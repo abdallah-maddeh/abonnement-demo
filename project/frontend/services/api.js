@@ -529,11 +529,7 @@ export const updateUserStatus = async (id, actif) => {
 
 export const getSubscriptions = async () => {
     const data = loadDemoData();
-    const currentUser = getCurrentUser();
-    const subscriptions = currentUser?.role === 'admin'
-        ? data.abonnements
-        : data.abonnements.filter((item) => item.userEmail === currentUser?.email);
-    return Promise.resolve({ subscriptions });
+    return Promise.resolve({ subscriptions: data.abonnements });
 };
 
 export const getSubscription = async (id) => {
