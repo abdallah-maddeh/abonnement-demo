@@ -58,7 +58,7 @@ const defaultData = {
             id: 'Scolaire',
             label: 'Abonnement Scolaire',
             duration: 'Mensualité scolaire',
-            basePrice: 850,
+            basePrice: 30,
             priceLabel: 'Tarif scolaire',
             eligibility: 'Élèves du secondaire',
             description: 'Une solution adaptée aux déplacements quotidiens des élèves.',
@@ -73,7 +73,7 @@ const defaultData = {
             id: 'Universitaire',
             label: 'Abonnement Universitaire',
             duration: 'Mensualité étudiant',
-            basePrice: 950,
+            basePrice: 50,
             priceLabel: 'Tarif étudiant',
             eligibility: 'Étudiants universitaires',
             description: 'Une formule pensée pour les trajets réguliers entre domicile, campus et résidence.',
@@ -88,7 +88,7 @@ const defaultData = {
             id: 'Professionnel',
             label: 'Abonnement Professionnel',
             duration: 'Mensualité pro',
-            basePrice: 1450,
+            basePrice: 100,
             priceLabel: 'Tarif professionnel',
             eligibility: 'Salariés et travailleurs',
             description: 'Une formule fiable pour les déplacements professionnels et quotidiens en toute sérénité.',
@@ -103,7 +103,7 @@ const defaultData = {
             id: 'Mensuel',
             label: 'Abonnement Mensuel',
             duration: '1 mois',
-            basePrice: 1200,
+            basePrice: 80,
             priceLabel: 'Tarif mensuel',
             eligibility: 'Tous passagers',
             description: 'Le format le plus simple pour rester mobile, sans engagement sur le long terme.',
@@ -118,7 +118,7 @@ const defaultData = {
             id: 'Trimestriel',
             label: 'Abonnement Trimestriel',
             duration: '3 mois',
-            basePrice: 3400,
+            basePrice: 200,
             priceLabel: 'Tarif trimestriel',
             eligibility: 'Tous passagers',
             description: 'Un bon équilibre entre flexibilité et économie pour les déplacements réguliers.',
@@ -133,7 +133,7 @@ const defaultData = {
             id: 'Annuel',
             label: 'Abonnement Annuel',
             duration: '12 mois',
-            basePrice: 12000,
+            basePrice: 700,
             priceLabel: 'Tarif annuel',
             eligibility: 'Tous passagers',
             description: 'La formule premium pour les voyageurs réguliers qui souhaitent une mobilité durable.',
@@ -148,7 +148,7 @@ const defaultData = {
             id: 'VIP',
             label: 'Abonnement VIP',
             duration: 'Annuel premium',
-            basePrice: 18500,
+            basePrice: 1200,
             priceLabel: 'Tarif premium',
             eligibility: 'Voyageurs premium',
             description: 'Une formule exclusive destinée aux voyageurs recherchant une expérience de transport privilégiée.',
@@ -181,7 +181,7 @@ const defaultData = {
             titre: 'Abonnement Premium',
             type: 'Annuel',
             ligne: 'Ligne 1',
-            prix: 12000,
+            prix: 380,
             dateDebut: '2026-04-01',
             dateFin: '2027-04-01',
             status: 'actif',
@@ -195,7 +195,7 @@ const defaultData = {
             titre: 'Abonnement Standard',
             type: 'Mensuel',
             ligne: 'Ligne 4',
-            prix: 1200,
+            prix: 40,
             dateDebut: '2026-06-15',
             dateFin: '2026-07-15',
             status: 'actif',
@@ -209,7 +209,7 @@ const defaultData = {
             titre: 'Abonnement Étudiant',
             type: 'Mensuel',
             ligne: 'Ligne 2',
-            prix: 1200,
+            prix: 40,
             dateDebut: '2026-05-10',
             dateFin: '2026-06-10',
             status: 'validee',
@@ -223,7 +223,7 @@ const defaultData = {
             titre: 'Abonnement Voyage',
             type: 'Trimestriel',
             ligne: 'Ligne 3',
-            prix: 3400,
+            prix: 105,
             dateDebut: '2026-01-01',
             dateFin: '2026-04-01',
             status: 'expire',
@@ -237,7 +237,7 @@ const defaultData = {
             titre: 'Demande en attente',
             type: 'Mensuel',
             ligne: 'Ligne 5',
-            prix: 1200,
+            prix: 40,
             dateDebut: '2026-07-01',
             dateFin: '2026-08-01',
             status: 'en_attente',
@@ -273,11 +273,11 @@ const ensureDemoDensity = (data) => {
     });
 
     const demoSubscriptions = [
-        ['Ahmed', 'Ben Salah', 'ahmed.bensalah@example.com', 'Abonnement Étudiant', 'Mensuel', 'Ligne 1', 1200, 'actif', '2026-09-01', '2026-10-01'],
-        ['Sarra', 'Trabelsi', 'sarra.trabelsi@example.com', 'Abonnement Standard', 'Mensuel', 'Ligne 2', 1200, 'actif', '2026-08-15', '2026-09-15'],
-        ['Mohamed', 'Jlassi', 'mohamed.jlassi@example.com', 'Abonnement Étudiant', 'Mensuel', 'Ligne 3', 1200, 'expire', '2026-07-01', '2026-08-01'],
-        ['Nour', 'Mansour', 'nour.mansour@example.com', 'Abonnement Professionnel', 'Trimestriel', 'Ligne 4', 3400, 'validee', '2026-09-05', '2026-12-05'],
-        ['Yasmine', 'Gharbi', 'yasmine.gharbi@example.com', 'Demande Étudiant', 'Mensuel', 'Ligne 5', 1200, 'en_attente', '2026-09-10', '2026-10-10'],
+        ['Ahmed', 'Ben Salah', 'ahmed.bensalah@example.com', 'Abonnement Étudiant', 'Mensuel', 'Ligne 1', 40, 'actif', '2026-09-01', '2026-10-01'],
+        ['Sarra', 'Trabelsi', 'sarra.trabelsi@example.com', 'Abonnement Standard', 'Mensuel', 'Ligne 2', 40, 'actif', '2026-08-15', '2026-09-15'],
+        ['Mohamed', 'Jlassi', 'mohamed.jlassi@example.com', 'Abonnement Étudiant', 'Mensuel', 'Ligne 3', 40, 'expire', '2026-07-01', '2026-08-01'],
+        ['Nour', 'Mansour', 'nour.mansour@example.com', 'Abonnement Professionnel', 'Trimestriel', 'Ligne 4', 105, 'validee', '2026-09-05', '2026-12-05'],
+        ['Yasmine', 'Gharbi', 'yasmine.gharbi@example.com', 'Demande Étudiant', 'Mensuel', 'Ligne 5', 40, 'en_attente', '2026-09-10', '2026-10-10'],
     ];
     const subscriptionEmails = new Set(data.abonnements.map((subscription) => subscription.userEmail));
     demoSubscriptions.forEach(([userPrenom, userNom, userEmail, titre, type, ligne, prix, status, dateDebut, dateFin]) => {
@@ -290,7 +290,7 @@ const ensureDemoDensity = (data) => {
         aliSubscription.type = 'Mensuel';
         aliSubscription.ligne = 'Ligne 4';
         aliSubscription.ligneArrivee = 'Tunis';
-        aliSubscription.prix = 1200;
+        aliSubscription.prix = 40;
         aliSubscription.dateDebut = '2026-09-01';
         aliSubscription.dateFin = '2026-09-30';
     }
@@ -560,21 +560,16 @@ export const getSubscriptionTypes = async () => {
 export const getSubscriptionPrice = async (type, lineId) => {
     const data = loadDemoData();
     const selectedType = data.typesAbonnement.find((item) => item.id === type);
-    const durationMonths = selectedType?.id === 'Annuel' || selectedType?.duration === '12 mois' ? 12
-        : selectedType?.id === 'Trimestriel' || selectedType?.duration === '3 mois' ? 3
-        : selectedType?.id === 'VIP' ? 12
-        : selectedType?.id === 'Personnel' ? 1
-        : 1;
-    const basePrice = Number(selectedType?.basePrice || 1200);
-    const durationDiscount = durationMonths >= 12 ? 0.96 : durationMonths >= 3 ? 0.94 : 1;
-    const categoryRate = 1 + ((Number(lineId) || 1) - 1) * 0.03;
-    const price = Math.round(basePrice * durationDiscount * categoryRate);
+    const basePrice = Number(selectedType?.basePrice ?? 0);
+    const coeff = 1 + ((Number(lineId) || 1) - 1) * 0.03;
+    const price = Math.max(0, Math.round(basePrice * coeff));
     return Promise.resolve({
         prix: price,
         tarifMensuel: basePrice,
-        dureeMois: durationMonths,
-        remiseDuree: durationDiscount,
-        coefficientCategorie: categoryRate,
+        dureeMois: selectedType?.id === 'Annuel' || selectedType?.duration === '12 mois' ? 12
+            : selectedType?.id === 'Trimestriel' || selectedType?.duration === '3 mois' ? 3
+            : 1,
+        coefficientCategorie: coeff,
     });
 };
 
